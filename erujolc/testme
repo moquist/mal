@@ -1,0 +1,10 @@
+#!/bin/bash
+
+step=$1
+if [[ -z $step ]]; then
+    echo missing step\#
+    exit 1
+fi
+
+cd ..
+make erujolc_TEST_OPTS="--start-timeout 60" test^erujolc^$step
