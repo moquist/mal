@@ -115,7 +115,10 @@
 (defn read-atom
   "Read an atom.
 
-  Return vector: ['reader atom]"
+  Return vector: ['reader atom]
+
+  Example call:
+  (read-atom (-> \"(a b c)\" tokenize (->MalReader 0) mal-step))"
   [reader]
   (let [[reader tok] (mal-next reader)
         datum (cond
@@ -132,7 +135,10 @@
 (defn read-form
   "Peek at the first token, and handle list or atom reading.
 
-  Return vector: ['reader result]"
+  Return vector: ['reader result]
+
+  Example call:
+  (-> \"(a b c)\" tokenize (->MalReader 0) read-form) "
   [reader]
   (let [tok (mal-peek reader)]
     (condp = tok
@@ -157,19 +163,26 @@
 (defn rep [x]
   (-> x
       READ
-      second
+      second ; throw away the MalReader, keep what was read
       EVAL
       PRINT))
 
-(defn prompt []
+(defn prompt
+  "Print a prompt, read a line.
+
+  Return the input line."
+  []
   (print "user> ")
   (flush)
   (read-line))
 
-(defn -main []
+(defn -main
+  "Prompt for input, process the input with READ-EVAL-PRINT, and recur."
+  []
   (if-let [x (prompt)]
     (do
       (try
         (println (rep x))
+        ;; TODO: watch for known exceptions, rather than eating them all. :)
         (catch Exception _))
       (recur))))
