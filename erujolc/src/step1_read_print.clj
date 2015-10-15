@@ -22,8 +22,13 @@
       :keyword val
       :list (str "(" (mal-print-list this) ")")
       :vector (str "[" (mal-print-list this) "]")
-      :string (str \" val \")
       :map (str "{" (mal-print-list this) "}")
+      :string (str \" (-> val
+                          ;; Replace escaped quotes with println-happy escaped quotes.
+                          (clojure.string/replace #"\"" "\\\\\\\"")
+                          ;; Replace newlines with println-happy escaped newlines.
+                          (clojure.string/replace #"\n" "\\\\\\n"))
+                   \")
       :nil "nil"
       (str val)))
   (mal-print-list [_]
