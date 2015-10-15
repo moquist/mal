@@ -10,7 +10,9 @@
 
 ;; ========================================
 ;; Mal types
-(def mal-types #{:list :vector :string :keyword :nil :int :fn})
+
+;; TODO: Use 'mal-types to validate on read, general error checking, introspection
+(def mal-types #{:list :vector :string :keyword :map :nil :int :fn})
 
 (defrecord MalDatum [type val]
   MalPrinter
@@ -21,6 +23,7 @@
       :list (str "(" (mal-print-list this) ")")
       :vector (str "[" (mal-print-list this) "]")
       :string (str \" val \")
+      :map (str "{" (mal-print-list this) "}")
       :nil "nil"
       (str val)))
   (mal-print-list [_]
@@ -73,7 +76,10 @@
   ([type reader] (read-list type reader []))
 
   ([type reader coll]
-   (let [closer (if (= type :list) ")" "]")]
+   (let [closer (condp = type
+                  :list ")"
+                  :vector "]"
+                  :map "}")]
      (if (= closer
             (try (mal-peek reader)
                  (catch IndexOutOfBoundsException _
@@ -82,7 +88,7 @@
        (do
          (utils/debug :read-list :closing :type type :reader reader :coll coll)
          [(mal-step reader) ; step over closing token
-          (->MalDatum type coll)])
+          (->MalDatum type coll)]) ; TODO: implement :map as a Clojure map?
        (let [[reader result] (read-form reader)]
          (utils/debug :read-list :reader reader :result result)
          (recur type reader (conj coll result))))
@@ -127,6 +133,7 @@
     (condp = tok
       "(" (read-list :list (mal-step reader))
       "[" (read-list :vector (mal-step reader))
+      "{" (read-list :map (mal-step reader))
       (read-atom reader))))
 
 (defn mal-read-string
