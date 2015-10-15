@@ -65,15 +65,16 @@
      (mal-peek this)]))
 
 (declare read-form)
-(defn read-list
+(defn read-coll
   "Read forms from 'reader into a collection of type 'type until the
   current form closes.
 
   Return vector: ['reader collection] with 'reader stepped past the
   closing token of the current form.
 
-  TODO: ADD EXAMPLE"
-  ([type reader] (read-list type reader []))
+  Example call:
+  (read-coll :list (-> \"(a b c)\" tokenize (->MalReader 0) mal-step))"
+  ([type reader] (read-coll type reader []))
 
   ([type reader coll]
    (let [closer (condp = type
@@ -86,13 +87,12 @@
                    (println (str "expected '" closer "', got EOF"))
                    (throw (Exception. "BadForm")))))
        (do
-         (utils/debug :read-list :closing :type type :reader reader :coll coll)
+         (utils/debug :read-coll :closing :type type :reader reader :coll coll)
          [(mal-step reader) ; step over closing token
           (->MalDatum type coll)]) ; TODO: implement :map as a Clojure map?
        (let [[reader result] (read-form reader)]
-         (utils/debug :read-list :reader reader :result result)
-         (recur type reader (conj coll result))))
-     )))
+         (utils/debug :read-coll :reader reader :result result)
+         (recur type reader (conj coll result)))))))
 
 (defn tok->str
   "Take a quoted string-literal token.
@@ -131,9 +131,9 @@
   [reader]
   (let [tok (mal-peek reader)]
     (condp = tok
-      "(" (read-list :list (mal-step reader))
-      "[" (read-list :vector (mal-step reader))
-      "{" (read-list :map (mal-step reader))
+      "(" (read-coll :list (mal-step reader))
+      "[" (read-coll :vector (mal-step reader))
+      "{" (read-coll :map (mal-step reader))
       (read-atom reader))))
 
 (defn mal-read-string
