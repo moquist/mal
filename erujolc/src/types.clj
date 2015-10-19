@@ -1,18 +1,18 @@
 (ns types
-  (:require printer))
+  (:require [printer :refer [MalPrinter mal-print-list mal-print-string]]))
 
 ;; TODO: Use 'mal-types to validate on read, general error checking, introspection
 (def mal-types #{:list :vector :string :keyword :map :nil :int :fn})
 
 (defrecord MalDatum [type val]
-  printer/MalPrinter
+  MalPrinter
   (mal-print-string [this print-readably]
     (condp = type
       :fn "#<function>"
       :keyword val
-      :list (str "(" (printer/mal-print-list this) ")")
-      :vector (str "[" (printer/mal-print-list this) "]")
-      :map (str "{" (printer/mal-print-list this) "}")
+      :list (str "(" (mal-print-list this print-readably) ")")
+      :vector (str "[" (mal-print-list this print-readably) "]")
+      :map (str "{" (mal-print-list this print-readably) "}")
       :string (str \" (if print-readably
                         (-> val
                             ;; Replace escaped quotes with println-happy escaped quotes.
@@ -25,6 +25,6 @@
       (str val)))
   (mal-print-list [_ print-readably]
     (->> val
-         (map #(printer/mal-print-string % print-readably))
+         (map #(mal-print-string % print-readably))
          (interpose " ")
          (apply str))))
