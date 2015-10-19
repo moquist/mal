@@ -8,7 +8,7 @@
 ;; REPL
 (defn READ [x] (reader/mal-read-string x))
 (defn EVAL [x] x)
-(defn PRINT [x] (printer/mal-print-string x))
+(defn PRINT [x] (printer/mal-print-string x true))
 (defn rep [x]
   (-> x
       READ
