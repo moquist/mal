@@ -52,7 +52,7 @@
             (try (mal-peek reader)
                  (catch IndexOutOfBoundsException _
                    (println (str "expected '" closer "', got EOF"))
-                   (throw (Exception. "BadForm")))))
+                   (throw (ex-info "Bad form" {:cause :bad-form :reader reader})))))
        (do
          (utils/debug :read-coll :closing :type type :reader reader :coll coll)
          [(mal-step reader) ; step over closing token

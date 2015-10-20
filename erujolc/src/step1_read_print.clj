@@ -33,5 +33,5 @@
       (try
         (println (rep x))
         ;; TODO: watch for known exceptions, rather than eating them all. :)
-        (catch Exception _))
+        (catch Exception e (ex-data e)))
       (recur))))
