@@ -103,6 +103,8 @@
   (-> \"(a b c)\" tokenize (->MalReader 0) read-form) "
   [reader]
   (let [tok (mal-peek reader)]
+    (if (= \; (first tok))
+      (throw (ex-info "comment" {:cause :comment :tok tok})))
     (condp = tok
       "(" (read-coll :list (mal-step reader))
       "[" (read-coll :vector (mal-step reader))
