@@ -2,6 +2,6 @@
 
 set -x
 
-for n in {0..1}; do
+for n in {0..2}; do
     ./testme step$n
 done
