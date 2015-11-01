@@ -20,8 +20,8 @@
 
 (defmacro def-env []
   `(def env ~(->> env-symbols
-                       (mapcat #(apply gen-env-entry %))
-                       (apply hash-map))))
+                  (mapcat #(apply gen-env-entry %))
+                  (apply hash-map))))
 (def-env)
 
 ;; ========================================
