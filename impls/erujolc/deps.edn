@@ -1,0 +1,11 @@
+{:paths ["src"]
+ :deps {org.clojure/clojure {:mvn/version "1.11.1"}}
+ :aliases {:step0 {:main-opts ["-m" step0-repl]}
+           :step1 {:main-opts ["-m" step1-read-print]}
+           :step2 {:main-opts ["-m" step2-eval]}
+           :step3 {:main-opts ["-m" step3-env]}
+           :step4 {:main-opts ["-m" step4-if-fn-do]}
+
+           :eastwood {:main-opts ["-m" "eastwood.lint" {:source-paths ["src"]}]
+                      :extra-deps {jonase/eastwood {:mvn/version "RELEASE"}}}
+           :cider-nrepl {:extra-deps {cider/cider-nrepl {:mvn/version "0.26.0"}}}}}
