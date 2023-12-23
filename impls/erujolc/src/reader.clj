@@ -173,6 +173,7 @@
                      "[" (read-coll :vector (mal-step reader))
                      "{" (read-coll :map (mal-step reader))
                      "'" (wrap-read 'quote (mal-step reader))
+                     "`" (wrap-read 'quasiquote (mal-step reader))
                      (read-atom reader))))))
 
 (defn read-forms
