@@ -1,5 +1,6 @@
 (ns reader
   (:require [clojure.edn :as edn]
+            [clojure.string :as str]
             types
             utils))
 
@@ -112,7 +113,14 @@
   Else return the parsed string-literal."
   [reader tok]
   (utils/debug ::tok->str :tok tok)
-  (let [x (edn/read-string tok)]
+  (let [x (try (edn/read-string tok)
+               (catch Exception e
+                 (let [e-str (.toString e)]
+                   (if (str/includes? e-str "EOF while reading string")
+                     (throw (ex-info e-str
+                                     {:cause :eof-while-reading-string
+                                      :reader reader}))
+                     (throw e)))))]
     (utils/debug ::tok-str :x x)
     x
     ))
