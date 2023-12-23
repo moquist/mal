@@ -10,11 +10,10 @@
     (prn ::MalDatum-MalPrinter :typ typ :datum-val datum-val)
     (condp = typ
       :fn "#<function>"
-      :keyword datum-val
       :list (str "(" (mal-print-list this print-readably) ")")
-      :vector (str "[" (mal-print-list this print-readably) "]")
       :map (str "{" (mal-print-list this print-readably) "}")
       :string ((if print-readably pr-str print-str) datum-val)
+      :vector (str "[" (mal-print-list this print-readably) "]")
       :nil "nil"
       (str datum-val)))
   (mal-print-list [_ print-readably]

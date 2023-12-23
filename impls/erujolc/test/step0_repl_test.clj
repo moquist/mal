@@ -9,16 +9,16 @@
 (deftest prompt-test
   (with-open [rdr (io/reader (char-array "hiya"))]
     (binding [*in* rdr]
-      (is (= (step0/prompt)) "hiya")))
+      (is (= (step0/prompt) "hiya"))))
   (with-open [rdr (io/reader (char-array ""))]
     (binding [*in* rdr]
-      (is (= (step0/prompt)) "")))
+      (is (nil? (step0/prompt)))))
   (with-open [rdr (io/reader (char-array "    booga    "))]
     (binding [*in* rdr]
-      (is (= (step0/prompt)) "booga")))
+      (is (= (step0/prompt) "booga"))))
   (with-open [rdr (io/reader (char-array "\n"))]
     (binding [*in* rdr]
-      (is (= (step0/prompt)) "")))
+      (is (= (step0/prompt) ""))))
   (with-redefs [clojure.core/read-line (constantly nil)]
     (is (nil? (step0/prompt))))
   (testing "handle correctly: EOD from console results in 'nil from .readLine on reader"

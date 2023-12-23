@@ -1,11 +1,5 @@
 #kaocha/v1
- {:tests [{:id :grafting-api, :test-paths ["modules/grafting-api/test/clojure"], :source-paths ["modules/grafting-api/src/clojure"]}
-         ;; Since the livespec requires you to be in the modules/platform dir
-         ;; we can't run the tests from the root directory. You can however cd
-         ;; modules/platform and run test.sh which will execute kaocha in the
-         ;; correct directory for platform.
-         ;; {:id :platform, :test-paths ["modules/platform/test/clojure"]}
-          ]
+ {:tests [{:id :mal, :test-paths ["test"], :source-paths ["src"]}]
 
   :kaocha/fail-fast? true
   :color? true

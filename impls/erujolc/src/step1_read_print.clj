@@ -1,5 +1,6 @@
 (ns step1-read-print
-  (:require utils
+  (:require [clojure.string :as str]
+            utils
             types
             reader
             printer))
