@@ -49,6 +49,7 @@
   (is (= (read-atom-helper "false") (types/->MalDatum :bool false)))
   (is (= (read-atom-helper "true") (types/->MalDatum :bool true)))
   (is (= (read-atom-helper "\"true\"") (types/->MalDatum :string "true")))
+  
   )
 
 (defn read-coll-helper [x]
@@ -116,15 +117,38 @@
                                        }})))
   )
 
+(deftest wrap-read
+  (is (= (second (reader/wrap-read 'booga (reader/->MalReader [[nil "7"]] 0)))
+         (types/->MalDatum :list [(types/->MalDatum :symbol 'booga)
+                                  (types/->MalDatum :int 7)])))
+  (is (= (second
+           (reader/wrap-read 'booga
+                             (reader/->MalReader [[nil "("]
+                                                  [nil ":a"]
+                                                  [nil ")"]]
+                                                 0)))
+         (types/->MalDatum
+           :list [(types/->MalDatum
+                    :symbol 'booga)
+                  (types/->MalDatum
+                    :list [(types/->MalDatum
+                             :keyword :a)])]))))
+
 
 (deftest mal-read-string
   (is (= (second (reader/mal-read-string "a"))
-         #types.MalDatum{:typ :symbol :datum-val a}))
+         (types/->MalDatum :symbol 'a)))
   (is (= (second (reader/mal-read-string "123"))
-         #types.MalDatum{:typ :int :datum-val 123}))
+         (types/->MalDatum :int 123)))
   (is (= (second (reader/mal-read-string ":a"))
-         #types.MalDatum{:typ :keyword :datum-val :a}))
+         (types/->MalDatum :keyword :a)))
   (is (= (second (reader/mal-read-string "(a :a)"))
-         #types.MalDatum{:typ :list,
-                         :datum-val [#types.MalDatum{:typ :symbol, :datum-val a}
-                                     #types.MalDatum{:typ :keyword, :datum-val :a}]})))
+         (types/->MalDatum :list
+                           [(types/->MalDatum :symbol 'a)
+                            (types/->MalDatum :keyword :a)])))
+  
+  (is (= (second (reader/mal-read-string "'a"))
+         (types/->MalDatum :list
+                           [(types/->MalDatum :symbol 'quote)
+                            (types/->MalDatum :symbol 'a)])))
+  )

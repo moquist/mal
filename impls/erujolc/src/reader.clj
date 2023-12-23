@@ -97,11 +97,11 @@
          )
        ))))
 
-#_
 (defn wrap-read [sym reader]
   (let [[reader form] (read-form reader)]
-    [reader ]
-    ))
+    [reader
+     (types/->MalDatum :list
+                       [(types/->MalDatum :symbol sym) form])]))
 
 (comment
   (println (edn/read-string "\"abc\""))
@@ -172,7 +172,6 @@
                      "(" (read-coll :list (mal-step reader))
                      "[" (read-coll :vector (mal-step reader))
                      "{" (read-coll :map (mal-step reader))
-                     #_#_
                      "'" (wrap-read 'quote (mal-step reader))
                      (read-atom reader))))))
 
