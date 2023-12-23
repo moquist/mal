@@ -19,21 +19,25 @@
   (tokenize "    (   + 3 7   )    ")
   )
 
-(defprotocol MalRead
-  (mal-next [this]
+(utils/defprotocol-once MalRead
+  (-mal-next [this]
     "return vector: [this tok]
          this => this, with 'position incremented
          tok  => token from 'mal-peek before increment")
-  (mal-peek [this]
+  (-mal-peek [this]
     "return tok from current 'position")
-  (mal-step [this]
+  (-mal-step [this]
     "increment 'position, return this"))
+
+(defn mal-next [x] (-mal-next x))
+(defn mal-peek [x] (-mal-peek x))
+(defn mal-step [x] (-mal-step x))
 
 (defrecord MalReader [tokens position]
   MalRead
-  (mal-step [this]
+  (-mal-step [this]
     (update this :position inc))
-  (mal-peek
+  (-mal-peek
     [_]
     (utils/debug :MalReader/mal-peek :count-tokens (count tokens) :position position)
     (if (<= (count tokens) position)
@@ -43,11 +47,11 @@
       (do
         (utils/debug :MalReader/mal-peek :returning (-> tokens (nth position) second))
         (-> tokens (nth position) second))))
-  (mal-next
+  (-mal-next
     [this]
-    [(mal-step this)
+    [(-mal-step this)
      ;;        ^v-- Immutable data, in case you forgot.
-     (mal-peek this)]))
+     (-mal-peek this)]))
 
 (declare read-form)
 (defn read-coll
@@ -72,7 +76,7 @@
      (utils/debug :read-coll :next-tok next-tok)
      (when (= next-tok ::peeked-into-the-abyss)
        (println (str "unbalanced " paren-plural))
-       (throw (ex-info "Bad form" {:cause :unclosed-form :reader reader})))
+       (throw (ex-info "unbalanced form" {:cause :unclosed-form :reader reader})))
      (if (= closer next-tok)
        ;; step over closing token
        (let [stepped-reader (mal-step reader)]

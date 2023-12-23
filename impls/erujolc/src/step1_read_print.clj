@@ -9,18 +9,19 @@
 ;; REPL
 (defn READ [x]
   ;; moquist TODO: the reader can't read all the forms -- must REPL in between forms so you can, e.g., (def y 7) (+ y 3)
-  (let [y (reader/mal-read-string x)]
+  (let [y (try (reader/mal-read-string x)
+               (catch clojure.lang.ExceptionInfo e
+                 (binding [*out* *err*]
+                   (prn e))))]
     (utils/debug ::READ :y y)
     y
     ))
 (defn EVAL [x] x)
-(defn PRINT [forms]
-  (assert forms)
-  (prn ::PRINT :moquist-forms forms)
-  (doall
-    (for [form forms]
-      (printer/mal-print-string form true))))
+(defn PRINT [form]
+  (when form
+    (printer/mal-print-string form true)))
 (defn rep [x]
+  #_
   (prn ::rep :x x)
   (-> x
       READ
@@ -42,6 +43,7 @@
   []
   (if-let [x (prompt)]
     (do
+      #_
       (prn ::-main :type-x (type x) :moquist-x x)
       (try
         (println (rep x))

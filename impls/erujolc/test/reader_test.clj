@@ -116,3 +116,15 @@
                                        }})))
   )
 
+
+(deftest mal-read-string
+  (is (= (second (reader/mal-read-string "a"))
+         #types.MalDatum{:typ :symbol :datum-val a}))
+  (is (= (second (reader/mal-read-string "123"))
+         #types.MalDatum{:typ :int :datum-val 123}))
+  (is (= (second (reader/mal-read-string ":a"))
+         #types.MalDatum{:typ :keyword :datum-val :a}))
+  (is (= (second (reader/mal-read-string "(a :a)"))
+         #types.MalDatum{:typ :list,
+                         :datum-val [#types.MalDatum{:typ :symbol, :datum-val a}
+                                     #types.MalDatum{:typ :keyword, :datum-val :a}]})))
