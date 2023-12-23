@@ -174,6 +174,8 @@
                      "{" (read-coll :map (mal-step reader))
                      "'" (wrap-read 'quote (mal-step reader))
                      "`" (wrap-read 'quasiquote (mal-step reader))
+                     "~" (wrap-read 'unquote (mal-step reader))
+                     "~@" (wrap-read 'splice-unquote (mal-step reader))
                      (read-atom reader))))))
 
 (defn read-forms
