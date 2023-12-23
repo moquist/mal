@@ -83,4 +83,36 @@
   (testing "empty map"
     (is (= (second (reader/read-coll :map (read-coll-helper "{}")))
            #types.MalDatum{:typ :map :datum-val {}})))
+  (testing "map of empty colls"
+    (is (= (second (reader/read-coll :map (read-coll-helper "{{} []}")))
+           #types.MalDatum{:typ :map
+                           :datum-val {#types.MalDatum{:typ :map
+                                                       :datum-val {}}
+                                       #types.MalDatum{:typ :vector
+                                                       :datum-val []}}})))
+  (testing "map overwrites dup keys"
+    (is (= (second (reader/read-coll :map (read-coll-helper "{{} 1, {} 2}")))
+           #types.MalDatum{:typ :map
+                           :datum-val {#types.MalDatum{:typ :map
+                                                       :datum-val {}}
+                                       #types.MalDatum{:typ :int
+                                                       :datum-val 2}}})))
+  (testing "map with more things"
+    (is (= (second (reader/read-coll :map (read-coll-helper
+                                            "{{} 1, [] :1, {\"abc\" false} nil}")))
+           #types.MalDatum{:typ :map
+                           :datum-val {#types.MalDatum{:typ :map :datum-val {}}
+                                       #types.MalDatum{:typ :int :datum-val 1}
+
+                                       #types.MalDatum{:typ :vector :datum-val []}
+                                       #types.MalDatum{:typ :keyword :datum-val :1}
+
+                                       #types.MalDatum{:typ :map
+                                                       :datum-val {#types.MalDatum{:typ :string
+                                                                                   :datum-val "abc"}
+                                                                   #types.MalDatum{:typ :bool
+                                                                                   :datum-val false}}}
+                                       #types.MalDatum{:typ :nil :datum-val nil}
+                                       }})))
   )
+

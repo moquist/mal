@@ -59,8 +59,10 @@
 
   Example call:
   (read-coll :list (-> \"(a b c)\" tokenize (->MalReader 0) mal-step))"
-  ([typ reader] (read-coll typ reader []))
-
+  ([typ reader] (read-coll typ reader (condp = typ
+                                        :list []
+                                        :map {}
+                                        :vector [])))
   ([typ reader coll]
    (let [[paren-plural closer] (condp = typ
                                  :list ["parens" ")"]
@@ -75,19 +77,20 @@
        ;; step over closing token
        (let [stepped-reader (mal-step reader)]
          (utils/debug :read-coll :pre-validation :typ typ :reader reader :coll coll)
-         (condp = typ
-           :list [stepped-reader (types/->MalDatum typ coll)]
-           :map (if (-> coll count odd?)
-                  ;; TODO: don't use exceptions for flow-control, and handle kv pairs before close (or can't be lazy)
-                  (throw (ex-info "Map must have even number of forms"
-                                  {:cause :map-must-have-kv-pairs
-                                   :reader reader}))
-                  [stepped-reader (types/->MalDatum typ (apply hash-map coll))])
-           :vector [stepped-reader (types/->MalDatum typ coll)]
-           ))
-       (let [[reader result] (read-form reader)]
-         (utils/debug :read-coll :reader reader :result result)
-         (recur typ reader (conj coll result)))))))
+         [stepped-reader (types/->MalDatum typ coll)])
+       (condp = typ
+         :list (let [[reader result] (read-form reader)]
+                 (utils/debug :read-coll :reader reader :result result)
+                 (recur typ reader (conj coll result)))
+         :map (let [[reader k] (read-form reader)
+                    [reader v] (read-form reader)]
+                 (utils/debug :read-coll :reader reader :k k :v v)
+                 (recur typ reader (assoc coll k v)))
+         :vector (let [[reader result] (read-form reader)]
+                   (utils/debug :read-coll :reader reader :result result)
+                   (recur typ reader (conj coll result)))
+         )
+       ))))
 
 #_
 (defn wrap-read [sym reader]

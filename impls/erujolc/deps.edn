@@ -8,4 +8,7 @@
 
            :eastwood {:main-opts ["-m" "eastwood.lint" {:source-paths ["src"]}]
                       :extra-deps {jonase/eastwood {:mvn/version "RELEASE"}}}
-           :cider-nrepl {:extra-deps {cider/cider-nrepl {:mvn/version "0.26.0"}}}}}
+           :cider-nrepl {:extra-deps {cider/cider-nrepl {:mvn/version "0.26.0"}}}
+           :kaocha {:extra-deps
+                    {lambdaisland/kaocha {:mvn/version "1.71.1119"}, org.slf4j/slf4j-nop {:mvn/version "2.0.4"}},
+                    :main-opts ["-m" "kaocha.runner" "--config-file" ".kaocha/tests.edn"]}}}
