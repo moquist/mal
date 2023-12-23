@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -x
+
+for n in {0..2}; do
+    ./testme step$n
+done
