@@ -8,21 +8,18 @@
 ;; ========================================
 ;; REPL
 (defn READ [x]
-  ;; moquist TODO: the reader can't read all the forms -- must REPL in between forms so you can, e.g., (def y 7) (+ y 3)
-  (let [y (try (reader/mal-read-string x)
-               (catch clojure.lang.ExceptionInfo e
-                 (binding [*out* *err*]
-                   (prn e))))]
-    (utils/debug ::READ :y y)
-    y
-    ))
+  (try (reader/mal-read-string x)
+       (catch clojure.lang.ExceptionInfo e
+         (binding [*out* *err*]
+           (prn e)))))
+
 (defn EVAL [x] x)
+
 (defn PRINT [form]
-  (when form
+  (when (satisfies? printer/MalPrinter form)
     (printer/mal-print-string form true)))
+
 (defn rep [x]
-  #_
-  (prn ::rep :x x)
   (-> x
       READ
       second ; throw away the MalReader, keep what was read
