@@ -147,7 +147,6 @@
                 (= tok "true") (types/->MalDatum :bool true)
                 (-> tok first (= \:)) (types/->MalDatum :keyword (keyword (subs tok 1)))
                 (re-matches #"\d+" tok) (types/->MalDatum :int (Integer. tok))
-                ;; split out :string handling to catch malformed strings, e.g.: "abc
                 (= \" (first tok)) (types/->MalDatum :string (tok->str reader tok))
                 :else (do
                         (utils/debug ::read-atom :symbol-tok :typ-tok (type tok) :tok tok)
@@ -186,18 +185,6 @@
                      "@" (wrap-read 'deref (mal-step reader))
                      "^" (wrap-read-meta 'with-meta (mal-step reader))
                      (read-atom reader))))))
-
-(defn read-forms
-  "Like read-form, but keeps reading until we've ::peeked-into-the-abyss."
-  [reader]
-  (loop [[reader form] (read-form reader)
-         ;; could track :position here for error messages
-         forms []]
-    ;; TODO: can't read all at once, must REPL *each* form independently
-    (utils/debug ::read-forms :form form :forms forms)
-    (if (not= ::peeked-into-the-abyss form)
-      (recur (read-form reader) (conj forms form))
-      [reader forms])))
 
 (defn mal-read-string
   "Tokenize input string, and then call 'read-forms on tokens.
