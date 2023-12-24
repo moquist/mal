@@ -153,7 +153,7 @@
   (is (= (second (reader/mal-read-string "^{:a 1} (hello)"))
          (types/->MalDatum
            :list [(types/->MalDatum :symbol 'with-meta)
+                  (types/->MalDatum :list [(types/->MalDatum :symbol 'hello)])
                   (types/->MalDatum :map {(types/->MalDatum :keyword :a)
-                                          (types/->MalDatum :int 1)})
-                  (types/->MalDatum :list [(types/->MalDatum :symbol 'hello)])])))
+                                          (types/->MalDatum :int 1)})])))
   )
