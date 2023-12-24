@@ -41,15 +41,12 @@
 (defn -main
   "Prompt for input, process the input with READ-EVAL-PRINT, and recur."
   []
-  (if-let [x (prompt)]
-    (do
-      #_
-      (prn ::-main :type-x (type x) :moquist-x x)
-      (try
-        (println (rep x))
-        ;; TODO: watch for known exceptions, rather than eating them all. :)
-        (catch Exception e
-          (throw e)
-          #_
-          (println (.getMessage e))))
-      (recur))))
+  (when-let [x (prompt)]
+    (try
+      (some-> (rep x) println)
+      ;; TODO: watch for known exceptions, rather than eating them all. :)
+      (catch Exception e
+        (throw e)
+        #_
+        (println (.getMessage e))))
+    (recur)))

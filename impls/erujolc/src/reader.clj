@@ -172,7 +172,7 @@
     (cond
       (= ::peeked-into-the-abyss tok) (do (utils/debug ::read-form :tok2 tok)
                                           [reader tok]) ; done!
-      (= \; (first tok)) "" ; comment!
+      (= \; (first tok)) nil ; comment!
       :default (do (utils/debug ::read-form :tok3 tok)
                    (condp = tok
                      "(" (read-coll :list (mal-step reader))
