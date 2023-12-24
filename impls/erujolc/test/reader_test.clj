@@ -134,7 +134,6 @@
                     :list [(types/->MalDatum
                              :keyword :a)])]))))
 
-
 (deftest mal-read-string
   (is (= (second (reader/mal-read-string "a"))
          (types/->MalDatum :symbol 'a)))
@@ -151,4 +150,10 @@
          (types/->MalDatum :list
                            [(types/->MalDatum :symbol 'quote)
                             (types/->MalDatum :symbol 'a)])))
+  (is (= (second (reader/mal-read-string "^{:a 1} (hello)"))
+         (types/->MalDatum
+           :list [(types/->MalDatum :symbol 'with-meta)
+                  (types/->MalDatum :map {(types/->MalDatum :keyword :a)
+                                          (types/->MalDatum :int 1)})
+                  (types/->MalDatum :list [(types/->MalDatum :symbol 'hello)])])))
   )

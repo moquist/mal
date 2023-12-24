@@ -103,12 +103,12 @@
      (types/->MalDatum :list
                        [(types/->MalDatum :symbol sym) form])]))
 
-(defn wrap-read2 [sym reader]
-  (let [[reader form] (read-form reader)
-        [reader form2] (read-form reader)]
+(defn wrap-read-meta [sym reader]
+  (let [[reader metadata] (read-form reader)
+        [reader data] (read-form reader)]
     [reader
      (types/->MalDatum :list
-                       [(types/->MalDatum :symbol sym) form form2])]))
+                       [(types/->MalDatum :symbol sym) data metadata])]))
 
 (comment
   (println (edn/read-string "\"abc\""))
@@ -184,6 +184,7 @@
                      "~" (wrap-read 'unquote (mal-step reader))
                      "~@" (wrap-read 'splice-unquote (mal-step reader))
                      "@" (wrap-read 'deref (mal-step reader))
+                     "^" (wrap-read-meta 'with-meta (mal-step reader))
                      (read-atom reader))))))
 
 (defn read-forms
