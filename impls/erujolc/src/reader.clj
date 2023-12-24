@@ -103,6 +103,13 @@
      (types/->MalDatum :list
                        [(types/->MalDatum :symbol sym) form])]))
 
+(defn wrap-read2 [sym reader]
+  (let [[reader form] (read-form reader)
+        [reader form2] (read-form reader)]
+    [reader
+     (types/->MalDatum :list
+                       [(types/->MalDatum :symbol sym) form form2])]))
+
 (comment
   (println (edn/read-string "\"abc\""))
   (edn/read-string "\"")

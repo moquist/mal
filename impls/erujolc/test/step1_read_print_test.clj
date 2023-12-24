@@ -8,5 +8,5 @@
   (is (= (second (step1/READ " 1 ")) #types.MalDatum{:typ :int :datum-val 1}))
   (is (= (second (step1/READ " 1  2")) #types.MalDatum{:typ :int :datum-val 1}))
   (is (= (second (step1/READ "()")) #types.MalDatum{:typ :list :datum-val []}))
-  (is (= (second (step1/READ "(")) #types.MalDatum{:typ :list :datum-val []}))
+  (is (nil? (second (step1/READ "("))))
   )
