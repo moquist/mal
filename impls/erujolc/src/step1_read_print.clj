@@ -20,11 +20,12 @@
     (printer/mal-print-string form true)))
 
 (defn rep [x]
-  (-> x
-      READ
-      second ; throw away the MalReader, keep what was read
-      EVAL
-      PRINT))
+  (let [[reader form] (READ x)]
+    [reader (-> form EVAL PRINT)]))
+
+(defn rep2 [reader]
+  (let [[reader form] (reader/read-form reader)]
+    [reader (-> form EVAL PRINT)]))
 
 (defn prompt
   "Print a prompt, read a line.
@@ -38,12 +39,9 @@
 (defn -main
   "Prompt for input, process the input with READ-EVAL-PRINT, and recur."
   []
-  (when-let [x (prompt)]
-    (try
-      (some-> (rep x) println)
-      ;; TODO: watch for known exceptions, rather than eating them all. :)
-      (catch Exception e
-        (throw e)
-        #_
-        (println (.getMessage e))))
+  (when-let [input (prompt)]
+    (loop [[reader result] (rep input)]
+      (when result (println result))
+      (when (and reader (not= :reader/peeked-into-the-abyss (reader/mal-peek reader)))
+        (recur (rep2 reader))))
     (recur)))

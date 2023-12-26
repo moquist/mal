@@ -187,7 +187,7 @@
                      (read-atom reader))))))
 
 (defn mal-read-string
-  "Tokenize input string, and then call 'read-forms on tokens.
+  "Tokenize input string, and then call 'read-form on tokens.
    Return: [reader MalDatum]"
   [mal-code]
   (-> mal-code
