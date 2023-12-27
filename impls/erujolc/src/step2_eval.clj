@@ -8,66 +8,69 @@
 ;; ========================================
 ;; REPL Environment
 
-(defn- gen-env-entry [f-sym f-type]
-  `[(types/->MalDatum :symbol ~f-sym)
-    (types/->MalDatum :fn (fn [& args#]
-                            ;; holy cow... functions are typed!
-                            ;; I need "types" for collections, though "type" is probably not the best-chosen word
-                            ;; I shouldn't need types for primitives
-                            (types/->MalDatum ~f-type
-                                              (apply ~(resolve f-sym) args#))))])
+(def built-in-env [['+ clojure.core/+]
+                   ['- clojure.core/-]
+                   ['* clojure.core/*]
+                   ['/ clojure.core//]])
 
-(def env-symbols [['+ :int]
-                  ['- :int]
-                  ['* :int]
-                  ['/ :int]])
+(defn gen-env [env]
+  (reduce (fn [r [f-sym f]]
+            (assoc r
+                  (types/->MalDatum :symbol f-sym)
+                  (types/->MalDatum :fn f)))
+          {}
+          env))
 
-(comment
-  (apply gen-env-entry ['+ :int])
-
-  )
-
-(defmacro def-env []
-  `(def env ~(->> env-symbols
-                  (mapcat #(apply gen-env-entry %))
-                  (apply hash-map))))
-(macroexpand (def-env))
+(def env (gen-env built-in-env))
 
 ;; ========================================
 ;; EVAL
 (declare eval-ast)
 (defn EVAL [x env]
-  (utils/debug :EVAL :x x :env env)
-  (let [evaluated (eval-ast x env)]
-    (utils/debug :EVAL :evaluated evaluated)
-    (if (= :list (:type x))
-      (let [[f & args] (->> evaluated
-                            :val
-                            (map :val))]
-        (utils/debug :EVAL :f f :args args)
-        (apply f args))
-      evaluated)))
+  (cond
+    (-> x :typ (not= :list))
+    (eval-ast x env)
+
+    (-> x :datum-val empty?)
+    x
+
+    :else
+    (let [[f & args] (eval-ast x env)]
+      (apply f args))))
 
 (defn eval-ast [ast env]
-  (utils/debug :eval-ast :ast ast :env env)
-  (condp = (:type ast)
-    :symbol (env ast)
-    ;; TODO: DRY!
-    :list (assoc ast :val (map #(EVAL % env) (:val ast)))
-    :vector (assoc ast :val (map #(EVAL % env) (:val ast)))
-    :map (assoc ast :val (map #(EVAL % env) (:val ast)))
-    ast))
+  (condp = (:typ ast)
+    :symbol (if-let [x (env ast)]
+              (:datum-val x)
+              (throw (ex-info (format "Unable to resolve symbol: %s in this context"
+                                      (:datum-val ast))
+                              {:cause :undefined-symbol
+                               :env env
+                               :symbol ast})))
+    :list (->> ast :datum-val (map #(EVAL % env)))
+    (:datum-val ast)))
+
+(defn wrapped-EVAL [x env]
+  (types/->MalDatum :undetermined
+                    (EVAL x env)))
 
 ;; ========================================
 ;; REPL
-(defn READ [x] (reader/mal-read-string x))
-(defn PRINT [x] (printer/mal-print-string x true))
+
+(defn READ [x]
+  (reader/mal-read-string x))
+
+(defn PRINT [form]
+  (when (satisfies? printer/MalPrinter form)
+    (printer/mal-print-string form true)))
+
 (defn rep [x]
-  (-> x
-      READ
-      second ; throw away the MalReader, keep what was read
-      (EVAL env)
-      PRINT))
+  (let [[reader form] (READ x)]
+    [reader (-> form (wrapped-EVAL env) PRINT)]))
+
+(defn rep2 [reader]
+  (let [[reader form] (reader/read-form reader)]
+    [reader (-> form (wrapped-EVAL env) PRINT)]))
 
 (defn prompt
   "Print a prompt, read a line.
@@ -76,15 +79,18 @@
   []
   (print "user> ")
   (flush)
-  (read-line))
+  (some-> (read-line) str/trim))
 
 (defn -main
   "Prompt for input, process the input with READ-EVAL-PRINT, and recur."
   []
-  (if-let [x (prompt)]
-    (do
-      (try
-        (println (rep x))
-        ;; TODO: watch for known exceptions, rather than eating them all. :)
-        (catch Exception e (ex-data e)))
-      (recur))))
+  (when-let [input (prompt)]
+    (try
+      (loop [[reader result] (rep input)]
+        (when result (println result))
+        (when (and reader (not= :reader/peeked-into-the-abyss (reader/mal-peek reader)))
+          (recur (rep2 reader))))
+      (catch clojure.lang.ExceptionInfo e
+        (binding [*out* *err*]
+          (prn e))))
+    (recur)))

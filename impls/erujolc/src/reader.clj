@@ -146,7 +146,7 @@
                 (= tok "false") (types/->MalDatum :bool false)
                 (= tok "true") (types/->MalDatum :bool true)
                 (-> tok first (= \:)) (types/->MalDatum :keyword (keyword (subs tok 1)))
-                (re-matches #"\d+" tok) (types/->MalDatum :int (Integer. tok))
+                (re-matches #"-?\d+" tok) (types/->MalDatum :int (Integer. tok))
                 (= \" (first tok)) (types/->MalDatum :string (tok->str reader tok))
                 :else (do
                         (utils/debug ::read-atom :symbol-tok :typ-tok (type tok) :tok tok)
