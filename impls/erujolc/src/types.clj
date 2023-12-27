@@ -2,7 +2,20 @@
   (:require [printer]))
 
 ;; TODO: Use 'mal-types to validate on read, general error checking, introspection
-(def mal-types #{:list :bool :vector :string :keyword :map :nil :int :fn})
+;; difference btw static and dynamic typing is: dynamic typing allows any type to be assigned to any variable without the programmer declaring that at compile time
+(def mal-types
+  "Mal needs to know all these types in order to PRINT them..."
+  #{:list
+    :vector
+    :bool
+    :string
+    :keyword
+    :map
+    :nil
+    :fn
+    :int
+    ;; figured out on-the-fly, as necessary
+    :undetermined})
 
 (defrecord MalDatum [typ datum-val]
   printer/MalPrinter

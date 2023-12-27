@@ -1,5 +1,6 @@
 (ns step2-eval
-  (:require utils
+  (:require [clojure.string :as str]
+            utils
             types
             reader
             printer))
@@ -8,8 +9,11 @@
 ;; REPL Environment
 
 (defn- gen-env-entry [f-sym f-type]
-  `[(types/->MalDatum :symbol '~f-sym)
+  `[(types/->MalDatum :symbol ~f-sym)
     (types/->MalDatum :fn (fn [& args#]
+                            ;; holy cow... functions are typed!
+                            ;; I need "types" for collections, though "type" is probably not the best-chosen word
+                            ;; I shouldn't need types for primitives
                             (types/->MalDatum ~f-type
                                               (apply ~(resolve f-sym) args#))))])
 
@@ -18,11 +22,16 @@
                   ['* :int]
                   ['/ :int]])
 
+(comment
+  (apply gen-env-entry ['+ :int])
+
+  )
+
 (defmacro def-env []
   `(def env ~(->> env-symbols
                   (mapcat #(apply gen-env-entry %))
                   (apply hash-map))))
-(def-env)
+(macroexpand (def-env))
 
 ;; ========================================
 ;; EVAL
