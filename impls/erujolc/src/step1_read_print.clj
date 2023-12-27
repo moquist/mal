@@ -16,6 +16,7 @@
 (defn EVAL [x] x)
 
 (defn PRINT [form]
+  (prn :moquist-form1 form)
   (when (satisfies? printer/MalPrinter form)
     (printer/mal-print-string form true)))
 

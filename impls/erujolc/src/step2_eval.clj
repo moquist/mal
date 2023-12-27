@@ -27,12 +27,14 @@
 ;; EVAL
 (declare eval-ast)
 (defn EVAL [x env]
+  #_
+  (prn :moquist-EVAL x)
   (cond
     (-> x :typ (not= :list))
     (eval-ast x env)
 
     (-> x :datum-val empty?)
-    x
+    '()
 
     :else
     (let [[f & args] (eval-ast x env)]
@@ -48,6 +50,7 @@
                                :env env
                                :symbol ast})))
     :list (->> ast :datum-val (map #(EVAL % env)))
+    :vector (->> ast :datum-val (mapv #(EVAL % env)))
     (:datum-val ast)))
 
 (defn wrapped-EVAL [x env]
@@ -61,6 +64,8 @@
   (reader/mal-read-string x))
 
 (defn PRINT [form]
+  #_
+  (prn :moquist-form2 form)
   (when (satisfies? printer/MalPrinter form)
     (printer/mal-print-string form true)))
 
