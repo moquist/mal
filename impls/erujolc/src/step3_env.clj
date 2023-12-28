@@ -1,9 +1,10 @@
 (ns step3-env
   (:require [clojure.string :as str]
-            utils
-            types
+            env
+            printer
             reader
-            printer))
+            types
+            utils))
 
 ;; ========================================
 ;; REPL Environment
@@ -12,16 +13,6 @@
                    ['- clojure.core/-]
                    ['* clojure.core/*]
                    ['/ clojure.core//]])
-
-(defn gen-env [env]
-  (reduce (fn [r [f-sym f]]
-            (assoc r
-                  (types/->MalDatum :symbol f-sym)
-                  (types/->MalDatum :fn f)))
-          {}
-          env))
-
-(def env (gen-env built-in-env))
 
 ;; ========================================
 ;; EVAL
@@ -40,7 +31,7 @@
 
 (defn eval-ast [ast env]
   (condp = (:typ ast)
-    :symbol (if-let [x (env ast)]
+    :symbol (if-let [x (env/get env ast)]
               (:datum-val x)
               (throw (ex-info (format "Unable to resolve symbol: %s in this context"
                                       (:datum-val ast))
@@ -74,18 +65,18 @@
   (when (satisfies? printer/MalPrinter form)
     (printer/mal-print-string form true)))
 
-(defn rep [x]
+(defn rep [x env]
   (let [[reader form] (READ x)]
     [reader (-> form (wrapped-EVAL env) PRINT)]))
 
 (defn LOOP
   "Loop through the forms in the provided input"
-  [input]
+  [input env]
   (try
-    (loop [[reader result] (rep input)]
+    (loop [[reader result] (rep input env)]
       (when result (println result))
       (when (and reader (not= :reader/peeked-into-the-abyss (reader/mal-peek reader)))
-        (recur (rep reader))))
+        (recur (rep reader env))))
     (catch clojure.lang.ExceptionInfo e
       (binding [*out* *err*]
         (prn e)))))
@@ -102,6 +93,12 @@
 (defn -main
   "Prompt for input, process the input with READ-EVAL-PRINT, and recur."
   []
-  (when-let [input (prompt)]
-    (LOOP input)
-    (recur)))
+  (let [env (reduce (fn [r [sym f]]
+                      (env/set r
+                               (types/->MalDatum :symbol sym)
+                               (types/->MalDatum :fn f)))
+                    (env/mal-environer nil)
+                    built-in-env)]
+    (when-let [input (prompt)]
+      (LOOP input env)
+      (recur))))
