@@ -65,7 +65,10 @@
 ;; REPL
 
 (defn READ [x]
-  (reader/mal-read-string x))
+  (cond
+    (string? x) (reader/mal-read-string x)
+    (satisfies? reader/MalRead x) (reader/read-form x)
+    :else (throw (Exception. (format "READ with invalid input of type %s" (type x))))))
 
 (defn PRINT [form]
   (when (satisfies? printer/MalPrinter form)
@@ -75,10 +78,6 @@
   (let [[reader form] (READ x)]
     [reader (-> form (wrapped-EVAL env) PRINT)]))
 
-(defn rep2 [reader]
-  (let [[reader form] (reader/read-form reader)]
-    [reader (-> form (wrapped-EVAL env) PRINT)]))
-
 (defn LOOP
   "Loop through the forms in the provided input"
   [input]
@@ -86,7 +85,7 @@
     (loop [[reader result] (rep input)]
       (when result (println result))
       (when (and reader (not= :reader/peeked-into-the-abyss (reader/mal-peek reader)))
-        (recur (rep2 reader))))
+        (recur (rep reader))))
     (catch clojure.lang.ExceptionInfo e
       (binding [*out* *err*]
         (prn e)))))
