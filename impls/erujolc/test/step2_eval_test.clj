@@ -25,4 +25,30 @@
                                   (types/->MalDatum :int 2)
                                   (types/->MalDatum :int 3)])])
                             env)]
-        (is (= (apply f args) 7))))))
+        (is (= (apply f args) 7))))
+    (testing "eval vector"
+      (is (= (step2/eval-ast (types/->MalDatum
+                               :vector
+                               [(types/->MalDatum :symbol '+)
+                                (types/->MalDatum :int 1)
+                                (types/->MalDatum
+                                  :list
+                                  [(types/->MalDatum :symbol '*)
+                                   (types/->MalDatum :int 2)
+                                   (types/->MalDatum :int 3)])])
+                             env)
+             [+ 1 6])))
+    (testing "eval map"
+      (is (= (step2/eval-ast (types/->MalDatum
+                               :map
+                               {(types/->MalDatum :symbol '+)
+                                (types/->MalDatum :int 1)
+                                (types/->MalDatum :keyword :hiya)
+                                (types/->MalDatum
+                                  :list
+                                  [(types/->MalDatum :symbol '*)
+                                   (types/->MalDatum :int 2)
+                                   (types/->MalDatum :int 3)])})
+                             env)
+             {+ 1
+              :hiya 6})))))
