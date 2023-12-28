@@ -79,6 +79,18 @@
   (let [[reader form] (reader/read-form reader)]
     [reader (-> form (wrapped-EVAL env) PRINT)]))
 
+(defn LOOP
+  "Loop through the forms in the provided input"
+  [input]
+  (try
+    (loop [[reader result] (rep input)]
+      (when result (println result))
+      (when (and reader (not= :reader/peeked-into-the-abyss (reader/mal-peek reader)))
+        (recur (rep2 reader))))
+    (catch clojure.lang.ExceptionInfo e
+      (binding [*out* *err*]
+        (prn e)))))
+
 (defn prompt
   "Print a prompt, read a line.
 
@@ -92,12 +104,5 @@
   "Prompt for input, process the input with READ-EVAL-PRINT, and recur."
   []
   (when-let [input (prompt)]
-    (try
-      (loop [[reader result] (rep input)]
-        (when result (println result))
-        (when (and reader (not= :reader/peeked-into-the-abyss (reader/mal-peek reader)))
-          (recur (rep2 reader))))
-      (catch clojure.lang.ExceptionInfo e
-        (binding [*out* *err*]
-          (prn e))))
+    (LOOP input)
     (recur)))
