@@ -16,8 +16,11 @@
     (testing "set"
       (let [e (env/set e :g "whiz")]
         (is (= (env/get e :g) "whiz")))
+      #_
       (testing "env immutable"
         (is (thrown-with-msg? 
               clojure.lang.ExceptionInfo
               #"not found"
-              (= (env/get e :g) "whiz")))))))
+              (= (env/get e :g) "whiz"))))
+      (testing "env NOT immutable"
+        (is (= (env/get e :g) "whiz"))))))

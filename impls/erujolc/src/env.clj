@@ -21,19 +21,22 @@
 (defrecord MalEnvironer [outer data]
   MalEnviron
   (-set [this k v]
+    (swap! data assoc k v)
+    this
+    #_
     (assoc-in this [:data k] v))
   (-find [this k]
     (cond
-      (contains? data k) this
+      (contains? @data k) this
       (satisfies? MalEnviron outer) (-find outer k)
       :else nil))
   (-get [this k]
-    (let [{data :data :as monkey} (-find this k)]
-      (if (contains? data k)
-        (data k)
+    (let [{data :data} (-find this k)]
+      (if (and data (contains? @data k))
+        (@data k)
         (throw (ex-info (format "%s not found, total bummer" k)
                         {:cause :ns-resolve-failed
                          :env this}))))))
 
 (defn mal-environer [outer & [data-init]]
-  (->MalEnvironer outer (or data-init {})))
+  (->MalEnvironer outer (atom (or data-init {}))))
