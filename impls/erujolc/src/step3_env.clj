@@ -8,15 +8,22 @@
 
 ;; ========================================
 ;; REPL Environment
+(declare eval-ast)
 
 (def built-in-env [['+ clojure.core/+]
                    ['- clojure.core/-]
                    ['* clojure.core/*]
                    ['/ clojure.core//]])
 
+(defn mal-def!
+  "Set k to the evaluated form in env, returning env"
+  [k form env]
+  (env/set env k (eval-ast form env)))
+
+(def specials [['def! mal-def!]])
+
 ;; ========================================
 ;; EVAL
-(declare eval-ast)
 (defn EVAL [x env]
   (cond
     (-> x :typ (not= :list))
