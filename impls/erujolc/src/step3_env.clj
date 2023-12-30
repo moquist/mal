@@ -17,10 +17,14 @@
 
 (defn mal-def!
   "Set k to the evaluated form in env, returning env"
-  [k form env]
-  (env/set env k (eval-ast form env)))
+  [env k form]
+  (prn :moquist-mal-def! :k k :form form :ea (eval-ast form env))
+  (let [v (types/->MalDatum :undetermined (eval-ast form env))]
+    (env/set env k v)
+    v))
 
-(def specials [['def! mal-def!]])
+(def mal-specials
+  {(types/->MalDatum :symbol 'def!) mal-def!})
 
 ;; ========================================
 ;; EVAL
@@ -33,8 +37,26 @@
     '()
 
     :else
-    (let [[f & args] (eval-ast x env)]
-      (apply f args))))
+    (let [[f & args] (:datum-val x)]
+      (condp = f
+        (types/->MalDatum :symbol 'def!)
+        (apply mal-def! env args)
+
+        (types/->MalDatum :symbol 'let*)
+        ;; TODO: allow more than one form
+        (let [[bindings form] args
+              _ (when (-> bindings count odd?)
+                  (throw (ex-info "odd number of forms in binding vector"
+                                  {:cause :invalid-binding-vector
+                                   :bindings bindings})))
+              env2 (reduce (fn [r [k v]]
+                             (env/set r k (types/->MalDatum :undetermined (eval-ast v r))))
+                           (env/mal-environer env)
+                           bindings)]
+          (types/->MalDatum :undetermined (eval-ast form env2)))
+
+        (let [[f & args] (eval-ast x env)]
+          (apply f args))))))
 
 (defn eval-ast [ast env]
   (condp = (:typ ast)
@@ -106,6 +128,7 @@
                                (types/->MalDatum :fn f)))
                     (env/mal-environer nil)
                     built-in-env)]
-    (when-let [input (prompt)]
-      (LOOP input env)
-      (recur))))
+    (loop []
+      (when-let [input (prompt)]
+        (LOOP input env)
+        (recur)))))

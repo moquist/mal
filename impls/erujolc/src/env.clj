@@ -10,7 +10,9 @@
     "Using -find, look up k in this env or a parent and return the matching v."))
 
 (defn set [this k v]
-  (-set this k v))
+  (-set this k v)
+  (prn :moquist-set-env (-> this :data deref))
+  this)
 
 (defn find [this k]
   (-find this k))
