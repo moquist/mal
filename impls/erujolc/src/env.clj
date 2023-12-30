@@ -11,7 +11,6 @@
 
 (defn set [this k v]
   (-set this k v)
-  (prn :moquist-set-env (-> this :data deref))
   [this v])
 
 (defn find [this k]
@@ -36,7 +35,7 @@
     (let [{data :data} (-find this k)]
       (if (and data (contains? @data k))
         (@data k)
-        (throw (ex-info (format "%s not found, total bummer" k)
+        (throw (ex-info (format "%s not found, total bummer" (:datum-val k))
                         {:cause :ns-resolve-failed
                          :env this}))))))
 
