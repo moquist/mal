@@ -12,7 +12,7 @@
 (defn set [this k v]
   (-set this k v)
   (prn :moquist-set-env (-> this :data deref))
-  this)
+  [this v])
 
 (defn find [this k]
   (-find this k))

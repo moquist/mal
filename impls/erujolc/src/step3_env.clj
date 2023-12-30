@@ -122,12 +122,12 @@
 (defn -main
   "Prompt for input, process the input with READ-EVAL-PRINT, and recur."
   []
-  (let [env (reduce (fn [r [sym f]]
-                      (env/set r
-                               (types/->MalDatum :symbol sym)
-                               (types/->MalDatum :fn f)))
-                    (env/mal-environer nil)
-                    built-in-env)]
+  (let [[env & _] (reduce (fn [[r & _] [sym f]]
+                            (env/set r
+                                     (types/->MalDatum :symbol sym)
+                                     (types/->MalDatum :fn f)))
+                          [(env/mal-environer nil)]
+                          built-in-env)]
     (loop []
       (when-let [input (prompt)]
         (LOOP input env)
