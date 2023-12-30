@@ -27,57 +27,59 @@
 ;; EVAL
 (declare eval-ast)
 (defn EVAL [x env]
+  (prn :moquist-EVAL :x x)
   (cond
     (-> x :typ (not= :list))
     (eval-ast x env)
 
     (-> x :datum-val empty?)
-    '()
+    (types/->MalDatum :list [])
 
     :else
-    (let [[f & args] (eval-ast x env)]
-      (apply f args))))
+    (let [[f & args] (:datum-val (eval-ast x env))]
+          (prn :moquist-EVAL-apply :f f :args args)
+          (types/->MalDatum :undetermined
+                            (apply (:datum-val f) (map :datum-val args))))
+    ))
 
 (defn eval-ast [ast env]
   (condp = (:typ ast)
-    :symbol (if-let [x (env ast)]
-              (:datum-val x)
+    :symbol (or
+              (get env ast)
               (throw (ex-info (format "Unable to resolve symbol: %s in this context"
                                       (:datum-val ast))
                               {:cause :undefined-symbol
                                :env env
                                :symbol ast})))
-    :list (->> ast :datum-val (map #(EVAL % env)))
-    :vector (->> ast :datum-val (mapv #(EVAL % env)))
+    :list (->> ast :datum-val (mapv #(EVAL % env)) (types/->MalDatum :list))
+    :vector (->> ast :datum-val (mapv #(EVAL % env)) (types/->MalDatum :vector))
     :map (->> ast
               :datum-val
               (map (fn [[k v]]
                      [(EVAL k env)
                       (EVAL v env)]))
-              (into {}))
-    (:datum-val ast)))
-
-(defn wrapped-EVAL [x env]
-  (types/->MalDatum :undetermined
-                    (EVAL x env)))
+              (into {})
+              (types/->MalDatum :map))
+    ast))
 
 ;; ========================================
 ;; REPL
 
 (defn READ [x]
-  (reader/mal-read-string x))
+  (cond
+    (string? x) (reader/mal-read-string x)
+    (satisfies? reader/MalRead x) (reader/read-form x)
+    :else (throw (Exception. (format "READ with invalid input of type %s" (type x))))))
 
 (defn PRINT [form]
+  (prn :moquist-PRINT form)
   (when (satisfies? printer/MalPrinter form)
     (printer/mal-print-string form true)))
 
 (defn rep [x]
   (let [[reader form] (READ x)]
-    [reader (-> form (wrapped-EVAL env) PRINT)]))
+    [reader (-> form (EVAL env) PRINT)]))
 
-(defn rep2 [reader]
-  (let [[reader form] (reader/read-form reader)]
-    [reader (-> form (wrapped-EVAL env) PRINT)]))
 
 (defn prompt
   "Print a prompt, read a line.
@@ -96,7 +98,7 @@
       (loop [[reader result] (rep input)]
         (when result (println result))
         (when (and reader (not= :reader/peeked-into-the-abyss (reader/mal-peek reader)))
-          (recur (rep2 reader))))
+          (recur (rep reader))))
       (catch clojure.lang.ExceptionInfo e
         (binding [*out* *err*]
           (prn e))))
