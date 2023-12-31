@@ -14,7 +14,7 @@
     (testing "recursing to outer"
       (is (= (env/get e :b) 2)))
     (testing "set"
-      (let [e (env/set e :g "whiz")]
+      (let [[e _] (env/set e :g "whiz")]
         (is (= (env/get e :g) "whiz")))
       #_
       (testing "env immutable"
