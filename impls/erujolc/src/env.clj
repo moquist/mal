@@ -39,5 +39,5 @@
                         {:cause :ns-resolve-failed
                          :env this}))))))
 
-(defn mal-environer [outer & [data-init]]
-  (->MalEnvironer outer (atom (or data-init {}))))
+(defn mal-environer [outer binds exprs]
+  (->MalEnvironer outer (atom (zipmap binds exprs))))

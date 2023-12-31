@@ -59,7 +59,7 @@
                              :bindings bindings})))
           (let [[env2 & _] (reduce (fn [[r & _] [k v]]
                                      (env/set r k (EVAL v r)))
-                                   [(env/mal-environer env)]
+                                   [(env/mal-environer env nil nil)]
                                    (->> bindings :datum-val (partition 2)))]
             (EVAL form env2)))
 
@@ -125,7 +125,7 @@
             (env/set r
                      (types/->MalDatum :symbol sym)
                      (types/->MalDatum :fn f)))
-          [(env/mal-environer nil)]
+          [(env/mal-environer nil nil nil)]
           env-init))
 
 (defn prompt

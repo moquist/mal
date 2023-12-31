@@ -8,24 +8,25 @@
                             ['* clojure.core/*]])]
     (testing "symbol lookup"
       ;; cannot check for equality of the inline fn from step2/gen-env-entry
-      (is (= ((step2/eval-ast (types/->MalDatum :symbol '+) env) 1 2 3 4)
+      (is (= ((:datum-val (step2/eval-ast (types/->MalDatum :symbol '+) env)) 1 2 3 4)
              10)))
     (testing "default no change"
-      (is (= (step2/eval-ast (types/->MalDatum :barnacle :meep) env)
+      (is (= (:datum-val (step2/eval-ast (types/->MalDatum :barnacle :meep) env))
              :meep)))
     (testing "eval list"
       (let [[f & args]
-            (step2/eval-ast (types/->MalDatum
-                              :list
-                              [(types/->MalDatum :symbol '+)
-                               (types/->MalDatum :int 1)
-                               (types/->MalDatum
-                                 :list
-                                 [(types/->MalDatum :symbol '*)
-                                  (types/->MalDatum :int 2)
-                                  (types/->MalDatum :int 3)])])
-                            env)]
-        (is (= (apply f args) 7))))
+            (:datum-val
+              (step2/eval-ast (types/->MalDatum
+                                :list
+                                [(types/->MalDatum :symbol '+)
+                                 (types/->MalDatum :int 1)
+                                 (types/->MalDatum
+                                   :list
+                                   [(types/->MalDatum :symbol '*)
+                                    (types/->MalDatum :int 2)
+                                    (types/->MalDatum :int 3)])])
+                              env))]
+        (is (= (apply (:datum-val f) (map :datum-val args)) 7))))
     (testing "eval vector"
       (is (= (step2/eval-ast (types/->MalDatum
                                :vector
@@ -37,7 +38,12 @@
                                    (types/->MalDatum :int 2)
                                    (types/->MalDatum :int 3)])])
                              env)
-             [+ 1 6])))
+             (types/->MalDatum
+               :vector
+               [(types/->MalDatum :fn +)
+                (types/->MalDatum :int 1)
+                (types/->MalDatum :undetermined 6)]))))
+
     (testing "eval map"
       (is (= (step2/eval-ast (types/->MalDatum
                                :map
@@ -50,5 +56,9 @@
                                    (types/->MalDatum :int 2)
                                    (types/->MalDatum :int 3)])})
                              env)
-             {+ 1
-              :hiya 6})))))
+             (types/->MalDatum :map 
+                               {(types/->MalDatum :fn +)
+                                (types/->MalDatum :int 1)
+
+                                (types/->MalDatum :keyword :hiya)
+                                (types/->MalDatum :undetermined 6)}))))))

@@ -3,10 +3,10 @@
             env))
 
 (deftest env
-  (let [e (env/mal-environer nil {:a 1 :b 2})]
+  (let [e (env/mal-environer nil [:a :b] [1 2])]
     (is (= (env/get e :a) 1)))
-  (let [e (env/mal-environer (env/mal-environer nil {:a 1 :b 2})
-                             {:a 3 :c 4})]
+  (let [e (env/mal-environer (env/mal-environer nil [:a :b] [1 2])
+                             [:a :c] [3 4])]
     (testing "env"
       (is (= (env/get e :c) 4)))
     (testing "env priority over outer"
