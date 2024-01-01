@@ -139,12 +139,9 @@
 (defn gen-env
   "Given a vector of vectors with symbol-fn pairs, reduce to a MalEnvironer."
   [env-init]
-  (reduce (fn [[r & _] [sym f]]
-            (env/set r
-                     (types/->MalDatum :symbol sym)
-                     (types/->MalDatum :fn f)))
-          [(env/mal-environer nil)]
-          env-init))
+  (let [ks (map #(->> % first (types/->MalDatum :symbol)) env-init)
+        vs (map #(->> % second (types/->MalDatum :fn)) env-init)]
+    (env/mal-environer nil ks vs)))
 
 (defn prompt
   "Print a prompt, read a line.
@@ -158,7 +155,7 @@
 (defn -main
   "Prompt for input, process the input with READ-EVAL-PRINT, and recur."
   []
-  (let [[env & _] (gen-env built-in-env)]
+  (let [env (gen-env built-in-env)]
     (loop []
       (when-let [input (prompt)]
         (LOOP input env)
