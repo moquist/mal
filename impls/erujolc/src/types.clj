@@ -13,6 +13,7 @@
     :map
     :nil
     :fn
+    :fn*
     :int
     ;; figured out on-the-fly, as necessary
     :undetermined})
@@ -23,7 +24,8 @@
     #_
     (prn ::MalDatum-MalPrinter :typ typ :datum-val datum-val)
     (condp = typ
-      :fn "#<function>"
+      :fn "#<host-function>"
+      :fn* "#<function>"
       :list (str "(" (printer/-mal-print-list this print-readably) ")")
       :map (str "{" (printer/-mal-print-map this print-readably) "}")
       :string ((if print-readably pr-str print-str) datum-val)
