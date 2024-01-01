@@ -12,7 +12,7 @@
     :keyword
     :map
     :nil
-    :fn
+    :host-fn
     :fn*
     :int
     ;; figured out on-the-fly, as necessary
@@ -24,7 +24,7 @@
     #_
     (prn ::MalDatum-MalPrinter :typ typ :datum-val datum-val)
     (condp = typ
-      :fn "#<host-function>"
+      :host-fn "#<host-function>"
       :fn* "#<function>"
       :list (str "(" (printer/-mal-print-list this print-readably) ")")
       :map (str "{" (printer/-mal-print-map this print-readably) "}")

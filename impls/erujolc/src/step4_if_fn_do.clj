@@ -99,8 +99,8 @@
         (let [[f & args] (:datum-val (eval-ast x env))]
           (clojure.pprint/pprint {:moquist-f f :args args :env env})
           (condp = (:typ f)
-            :fn (types/->MalDatum :undetermined
-                                  (apply (:datum-val f) (map :datum-val args)))
+            :host-fn (types/->MalDatum :undetermined
+                                       (apply (:datum-val f) (map :datum-val args)))
             :fn* (apply (:datum-val f) args)))))))
 
 (defn eval-ast
@@ -159,7 +159,7 @@
   "Given a vector of vectors with symbol-fn pairs, reduce to a MalEnvironer."
   [env-init]
   (let [ks (map #(->> % first (types/->MalDatum :symbol)) env-init)
-        vs (map #(->> % second (types/->MalDatum :fn)) env-init)]
+        vs (map #(->> % second (types/->MalDatum :host-fn)) env-init)]
     (env/mal-environer nil ks vs)))
 
 (defn prompt
