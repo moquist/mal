@@ -63,13 +63,16 @@
         ;; fn*
         (types/->MalDatum :symbol 'fn*)
         (let [[binds body] args]
+          #_
           (clojure.pprint/pprint {:moquist :fn* :binds binds :body body})
           (types/->MalDatum
             :fn*
             ;; this gets the args already :datum-val from apply, below
             (fn moquist-blookie [& args]
+              #_
               (clojure.pprint/pprint {:moquist :blookie :args args :env env})
               (let [e2 (env/mal-environer env (:datum-val binds) args)]
+                #_
                 (clojure.pprint/pprint {:moquist :blookie2 :e2 e2})
                 (EVAL body e2)))))
 
@@ -93,6 +96,7 @@
 
         ;; assume it's a function of some kind
         (let [[f & args] (:datum-val (eval-ast x env))]
+          #_
           (clojure.pprint/pprint {:moquist-f f :args args :env env})
           (apply (:datum-val f) args)
           #_
@@ -133,6 +137,7 @@
     :else (throw (Exception. (format "READ with invalid input of type %s" (type x))))))
 
 (defn PRINT [form]
+  #_
   (clojure.pprint/pprint {:moquist :PRINT :form form})
   (when (satisfies? printer/MalPrinter form)
     (printer/mal-print-string form true)))
