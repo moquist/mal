@@ -1,6 +1,7 @@
 (ns step4-if-fn-do
   (:require [clojure.string :as str]
             [clojure.pprint]
+            core
             env
             printer
             reader
@@ -10,11 +11,6 @@
 ;; ========================================
 ;; REPL Environment
 (declare EVAL)
-
-(def built-in-env [['+ clojure.core/+]
-                   ['- clojure.core/-]
-                   ['* clojure.core/*]
-                   ['/ clojure.core//]])
 
 (defn mal-def!
   "Set k to the evaluated form in env, returning env"
@@ -98,6 +94,8 @@
         ;; assume it's a function of some kind
         (let [[f & args] (:datum-val (eval-ast x env))]
           (clojure.pprint/pprint {:moquist-f f :args args :env env})
+          (apply (:datum-val f) args)
+          #_
           (condp = (:typ f)
             :host-fn (types/->MalDatum :undetermined
                                        (apply (:datum-val f) (map :datum-val args)))
@@ -148,6 +146,7 @@
   [input env]
   (try
     (loop [[reader result] (rep input env)]
+      ;; TODO: stop printing here, that's dumb
       (when result (println result))
       (when (and reader (not= :reader/peeked-into-the-abyss (reader/mal-peek reader)))
         (recur (rep reader env))))
@@ -174,7 +173,7 @@
 (defn -main
   "Prompt for input, process the input with READ-EVAL-PRINT, and recur."
   []
-  (let [env (gen-env built-in-env)]
+  (let [env (gen-env core/built-in-env)]
     (loop []
       (when-let [input (prompt)]
         (LOOP input env)
