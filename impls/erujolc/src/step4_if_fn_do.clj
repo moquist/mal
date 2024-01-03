@@ -179,6 +179,7 @@
   "Prompt for input, process the input with READ-EVAL-PRINT, and recur."
   []
   (let [env (gen-env core/built-in-env)]
+    (rep "(def! not (fn* (a) (if a false true)))" env)
     (loop []
       (when-let [input (prompt)]
         (LOOP input env)
