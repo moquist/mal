@@ -1,4 +1,5 @@
 (ns env
+  (:require types)
   (:refer-clojure :exclude [get find set]))
 
 (defprotocol MalEnviron
@@ -39,5 +40,25 @@
                         {:cause :ns-resolve-failed
                          :env this}))))))
 
+(defn handle-variadic [binds exprs]
+  (loop [binds binds
+         exprs exprs
+         result {}]
+    (if (-> binds
+            first
+            (= (types/->MalDatum :symbol '&)))
+      (assoc result
+             (second binds)
+             (types/->MalDatum :list exprs))
+      (let [result (assoc result
+                          (first binds)
+                          (first exprs))]
+        (if (next binds)
+          (recur (next binds)
+                 (next exprs)
+                 result)
+          result)))))
+
 (defn mal-environer [outer binds exprs]
-  (->MalEnvironer outer (atom (zipmap binds exprs))))
+  (let [init-data (handle-variadic binds exprs)]
+    (->MalEnvironer outer (atom init-data))))

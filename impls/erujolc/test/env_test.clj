@@ -1,6 +1,7 @@
 (ns env-test
   (:require [clojure.test :refer [testing deftest is]]
-            env))
+            env
+            types))
 
 (deftest env
   (let [e (env/mal-environer nil [:a :b] [1 2])]
@@ -24,3 +25,12 @@
               (= (env/get e :g) "whiz"))))
       (testing "env NOT immutable"
         (is (= (env/get e :g) "whiz"))))))
+
+(deftest handle-variadic
+  (is (= (env/handle-variadic [:a :b :c] [1 2 3])
+         {:a 1 :b 2 :c 3}))
+  (is (= (env/handle-variadic
+           [:a (types/->MalDatum :symbol '&) :b]
+           [1 2 3])
+         {:a 1
+          :b (types/->MalDatum :list [2 3])})))
