@@ -7,9 +7,11 @@
     (types/->MalDatum :undetermined
                       (apply f (map :datum-val args)))))
 
-(defn mal-prn [x]
-  (some-> (printer/mal-print-string x true)
-          println)
+(defn mal-prn [& xs]
+  (dorun
+    (for [x xs]
+      (some-> (printer/mal-print-string x true)
+              println)))
   (types/->MalDatum :nil nil))
 
 (defn mal-list [& items]
