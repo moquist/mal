@@ -21,9 +21,11 @@
   (->> x :typ (= :list) (types/->MalDatum :bool)))
 
 (defn mal-empty? [x]
-  (or (and (-> x :typ (#{:list :vector :map :set}))
-           (-> x :datum-val count zero?))
-      (->> x :typ (= :nil) (types/->MalDatum :bool))))
+  (types/->MalDatum
+    :bool
+    (or (and (-> x :typ (#{:list :vector :map :set}))
+             (-> x :datum-val count zero?))
+        (-> x :typ (= :nil)))))
 
 (defn mal-count [x]
   (if (-> x :typ (#{:list :vector :map :set}))
