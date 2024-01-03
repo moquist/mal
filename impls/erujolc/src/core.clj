@@ -15,7 +15,7 @@
   (types/->MalDatum :nil nil))
 
 (defn mal-list [& items]
-  (types/->MalDatum :list items))
+  (types/->MalDatum :list (or items [])))
 
 (defn mal-list? [x]
   (->> x :typ (= :list) (types/->MalDatum :bool)))
