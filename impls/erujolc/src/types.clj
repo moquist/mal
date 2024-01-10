@@ -45,3 +45,9 @@
          (map #(printer/-mal-print-string % print-readably))
          (interpose " ")
          (apply str))))
+
+(defn mal-datum [typ datum-val]
+  (->MalDatum typ datum-val))
+
+(def mal-nil (->MalDatum :nil nil))
+
