@@ -63,18 +63,11 @@
           ;; fn*
           (types/->MalDatum :symbol 'fn*)
           (let [[binds body] args]
-            #_
-            (clojure.pprint/pprint {:moquist :fn* :binds binds :body body})
             (types/->MalDatum
               :fn*
-              ;; this gets the args already :datum-val from apply, below
-              (fn moquist-blookie [& args]
-                #_
-                (clojure.pprint/pprint {:moquist :blookie :args args :env env})
-                (let [e2 (env/mal-environer env (:datum-val binds) args)]
-                  #_
-                  (clojure.pprint/pprint {:moquist :blookie2 :e2 e2})
-                  (EVAL body e2)))))
+              {:ast body
+               :binds binds
+               :f-env env}))
 
           ;; let*
           (types/->MalDatum :symbol 'let*)
@@ -92,20 +85,20 @@
                                        (env/set r k (EVAL v r)))
                                      [(env/mal-environer env nil nil)]
                                      (->> bindings :datum-val (partition 2)))]
-              #_
-              (EVAL form env2)
               (recur form env2)))
 
           ;; assume it's a function of some kind
           (let [[f & args] (:datum-val (eval-ast x env))]
-            #_
-            (clojure.pprint/pprint {:moquist-f f :args args :env env})
-            (apply (:datum-val f) args)
-            #_
+            ;; don't print env here, dork. it's got recursive structure in it.
             (condp = (:typ f)
-              :host-fn (types/->MalDatum :undetermined
-                                         (apply (:datum-val f) (map :datum-val args)))
-              :fn* (apply (:datum-val f) args))))))))
+              :host-fn (apply (:datum-val f) args)
+              :fn* (let [{:keys [ast binds f-env]} (:datum-val f)
+                         e2 (env/mal-environer f-env (:datum-val binds) args)]
+                     (recur ast e2))
+              (throw (ex-info (format "Unknown type of function: %s" (:typ f))
+                              {:cause :unknown-type-of-function
+                               :f f
+                               :args args})))))))))
 
 (defn eval-ast
   "ast and return value are always MalDatum"

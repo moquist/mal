@@ -12,8 +12,8 @@
     :keyword
     :map
     :nil
-    :host-fn
-    :fn*
+    :host-fn ; implemented in the host language, built-in
+    :fn* ; implemented in mal
     :int
     ;; figured out on-the-fly, as necessary
     :undetermined})
