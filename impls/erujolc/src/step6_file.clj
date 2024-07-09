@@ -94,11 +94,13 @@
 
           ;; read-string
           (types/->MalDatum :symbol 'read-string)
-          (core/mal-read-string (first args))
+          (core/mal-read-string (EVAL (first args) env))
 
           ;; slurp
           (types/->MalDatum :symbol 'slurp)
-          (core/mal-slurp (first args))
+          ;; TODO: handle error from multiple args
+          ;; TODO: handle arity for all the special forms!
+          (core/mal-slurp (EVAL (first args) env))
 
           ;; type
           (types/->MalDatum :symbol 'type)
