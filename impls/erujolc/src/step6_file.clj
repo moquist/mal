@@ -100,6 +100,12 @@
           (types/->MalDatum :symbol 'slurp)
           (core/mal-slurp (first args))
 
+          ;; type
+          (types/->MalDatum :symbol 'type)
+          (let [[x & _error-handling-someday] args]
+            (types/->MalDatum :type
+                              (name (:typ (EVAL x env)))))
+
           ;; assume it's a function of some kind
           (let [[f & args] (:datum-val (eval-ast x env))]
             ;; don't print env here, dork. it's got recursive structure in it.

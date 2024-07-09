@@ -15,6 +15,7 @@
     :host-fn ; implemented in the host language, built-in
     :fn* ; implemented in mal
     :int
+    :type
     ;; figured out on-the-fly, as necessary
     :undetermined})
 
