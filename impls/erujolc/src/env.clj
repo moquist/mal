@@ -38,6 +38,7 @@
         (@data k)
         (throw (ex-info (format "%s not found, total bummer" (:datum-val k))
                         {:cause :ns-resolve-failed
+                         #_#_ ;; recursive... blows up!
                          :env this}))))))
 
 (defn handle-variadic [binds exprs]
