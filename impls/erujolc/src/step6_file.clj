@@ -40,6 +40,11 @@
       :else
       (let [[f & args] (:datum-val x)]
         (condp = f
+          ;; atom
+          (types/->MalDatum :symbol 'atom)
+          (types/mal-datum :atom
+                           (EVAL (first args) env))
+
           ;; def!
           (types/->MalDatum :symbol 'def!)
           (apply mal-def! env args)

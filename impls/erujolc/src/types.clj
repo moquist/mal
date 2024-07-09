@@ -5,7 +5,8 @@
 ;; difference btw static and dynamic typing is: dynamic typing allows any type to be assigned to any variable without the programmer declaring that at compile time
 (def mal-types
   "Mal needs to know all these types in order to PRINT them..."
-  #{:list
+  #{:atom
+    :list
     :vector
     :bool
     :string
@@ -26,6 +27,7 @@
     (prn ::MalDatum-MalPrinter :typ typ :datum-val datum-val)
     (condp = typ
       :host-fn "#<host-function>"
+      :atom (str "#<atom>{" (printer/mal-print-string datum-val print-readably) "}")
       :fn* "#<function>"
       :list (str "(" (printer/-mal-print-list this print-readably) ")")
       :map (str "{" (printer/-mal-print-map this print-readably) "}")
