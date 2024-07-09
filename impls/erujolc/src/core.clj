@@ -27,7 +27,7 @@
 
 (defn mal-read-string [s]
   (when-not (= (:typ s) :string)
-    (throw (ex-info (format "cannot read-string a non-string value: %s" s)
+    (throw (ex-info (format "cannot read-string a non-string value: %s" (:typ s))
                     {:cause :read-string-non-string
                      :value s})))
   ;; toss the reader
@@ -35,7 +35,7 @@
 
 (defn mal-slurp [path]
   (when-not (= (:typ path) :string)
-    (throw (ex-info (format "cannot slurp a non-string value: %s" path)
+    (throw (ex-info (format "cannot slurp a non-string value: %s" (:typ path))
                     {:cause :slurp-non-string
                      :value path})))
   (-> path
