@@ -82,7 +82,10 @@
          #types.MalDatum{:typ :list,
                          :datum-val [#types.MalDatum{:typ :symbol, :datum-val +}
                                      #types.MalDatum{:typ :int, :datum-val 2}
-                                     #types.MalDatum{:typ :int, :datum-val 3}]})))
+                                     #types.MalDatum{:typ :int, :datum-val 3}]}))
+  (testing "mal-read-string only reads one form, just like in Clojure"
+    (is (= (core/mal-read-string (types/mal-datum :string "1 2"))
+           (types/mal-datum :int 1)))))
 
 (deftest mal-slurp-test
   (let [tmpfile (str "/tmp/mal-slurp-test-" (rand-int 100000) ".tmp")

@@ -195,6 +195,8 @@
   "Add to the mutable env."
   [env]
   (rep "(def! not (fn* (a) (if a false true)))" env)
+  (rep "(def! load-file (fn* (f) (eval (read-string (str \"(do \" (slurp f) \"\nnil)\")))))"
+       env)
   )
 
 (defn -main
