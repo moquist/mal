@@ -1,5 +1,6 @@
 (ns core-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [clojure.java.io :as io]
+            [clojure.test :refer [deftest is testing]]
             core
             types))
 
@@ -75,3 +76,28 @@
           (types/mal-datum :int 3)
           (types/mal-datum :int 4))
          (types/mal-datum :bool true))))
+
+(deftest mal-read-string-test
+  (is (= (core/mal-read-string (types/mal-datum :string "(+ 2 3)"))
+         #types.MalDatum{:typ :list,
+                         :datum-val [#types.MalDatum{:typ :symbol, :datum-val +}
+                                     #types.MalDatum{:typ :int, :datum-val 2}
+                                     #types.MalDatum{:typ :int, :datum-val 3}]})))
+
+(deftest mal-slurp-test
+  (let [tmpfile (str "/tmp/mal-slurp-test-" (rand-int 100000) ".tmp")
+        malfile (types/mal-datum :string tmpfile)]
+    (try
+      (spit tmpfile "(+ 1 2 3 1)")
+      (is (= (core/mal-slurp malfile)
+             (types/mal-datum :string "(+ 1 2 3 1)")))
+      (is (= (core/mal-read-string (core/mal-slurp malfile))
+             #types.MalDatum{:typ :list,
+                             :datum-val [#types.MalDatum{:typ :symbol, :datum-val +}
+                                         #types.MalDatum{:typ :int, :datum-val 1}
+                                         #types.MalDatum{:typ :int, :datum-val 2}
+                                         #types.MalDatum{:typ :int, :datum-val 3}
+                                         #types.MalDatum{:typ :int, :datum-val 1}]}))
+      (finally
+        (io/delete-file tmpfile true)))))
+
