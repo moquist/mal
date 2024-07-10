@@ -69,6 +69,21 @@
             (swap! mal-atoms assoc atom-id v)
             v)
 
+          ;; swap!
+          (types/mal-datum :symbol 'swap!)
+          (let [[a f & f-args] (:datum-val (eval-ast (types/mal-datum :list args) env))
+                atom-id (:datum-val a)
+                atom-val (-> mal-atoms deref (get atom-id))
+                new-val (EVAL
+                          (types/mal-datum
+                            :list
+                            (into
+                              [f atom-val]
+                              f-args))
+                          env)]
+            (swap! mal-atoms assoc atom-id new-val)
+            new-val)
+
           ;; def!
           (types/->MalDatum :symbol 'def!)
           (apply mal-def! env args)
