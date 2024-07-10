@@ -22,6 +22,11 @@
 (def mal-specials
   {(types/->MalDatum :symbol 'def!) mal-def!})
 
+(def mal-atoms
+  ;; could just use clojure atoms, but seems interesting to have a slightly different model
+  "map from atom-id to value"
+  (atom {}))
+
 ;; ========================================
 ;; EVAL
 (declare eval-ast)
@@ -42,12 +47,27 @@
         (condp = f
           ;; atom
           (types/->MalDatum :symbol 'atom)
-          (types/mal-datum :atom
-                           (EVAL (first args) env))
+          (let [[v & _err] args
+                atom-id (gensym)]
+            (swap! mal-atoms assoc atom-id (EVAL v env))
+            (-> (types/mal-datum :atom atom-id)
+                (assoc :meta-datum {:mal-atoms mal-atoms})))
 
           ;; deref
           (types/mal-datum :symbol 'deref)
-          (:datum-val (EVAL (first args) env))
+          (let [[x & _err] args
+                a (EVAL x env)
+                atom-id (:datum-val a)]
+            (-> mal-atoms deref (get atom-id)))
+
+          ;; reset
+          (types/mal-datum :symbol 'reset!)
+          (let [[a v & _err] args
+                a (EVAL a env)
+                v (EVAL v env)
+                atom-id (:datum-val a)]
+            (swap! mal-atoms assoc atom-id v)
+            v)
 
           ;; def!
           (types/->MalDatum :symbol 'def!)

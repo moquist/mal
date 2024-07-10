@@ -27,7 +27,11 @@
     (prn ::MalDatum-MalPrinter :typ typ :datum-val datum-val)
     (condp = typ
       :host-fn "#<host-function>"
-      :atom (str "#<atom>{" (printer/mal-print-string datum-val print-readably) "}")
+      :atom (str "(atom "
+                 (printer/mal-print-string
+                   (-> this :meta-datum :mal-atoms deref (get datum-val))
+                   print-readably)
+                 ")")
       :fn* "#<function>"
       :list (str "(" (printer/-mal-print-list this print-readably) ")")
       :map (str "{" (printer/-mal-print-map this print-readably) "}")
