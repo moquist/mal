@@ -55,8 +55,8 @@
 
           ;; deref
           (types/mal-datum :symbol 'deref)
-          (let [[x & _err] args
-                a (EVAL x env)
+          (let [[a & _err] args
+                a (EVAL a env)
                 atom-id (:datum-val a)]
             (-> mal-atoms deref (get atom-id)))
 
