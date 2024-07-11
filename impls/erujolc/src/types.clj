@@ -58,3 +58,6 @@
 
 (def mal-nil (->MalDatum :nil nil))
 
+(defmethod clojure.core/print-method ::fn* [x _]
+  (prn (select-keys x [:ast :binds])))
+

@@ -8,6 +8,9 @@
             types
             utils))
 
+#_ ;; too crude
+(set! *print-level* 2)
+
 ;; ========================================
 ;; REPL Environment
 (declare EVAL)
@@ -32,9 +35,9 @@
 (declare eval-ast)
 (defn EVAL
   "x and return value are always MalDatum"
-  [x env]
+  [x outermost-env]
   (loop [x x
-         env env]
+         env outermost-env]
     (cond
       (-> x :typ (not= :list))
       (eval-ast x env)
@@ -84,9 +87,16 @@
             (swap! mal-atoms assoc atom-id new-val)
             new-val)
 
+          ;; env-keys
+          (types/mal-datum :symbol 'env-keys)
+          (prn (->> env :data deref keys (map :datum-val)))
+
           ;; def!
           (types/->MalDatum :symbol 'def!)
-          (apply mal-def! env args)
+          (apply mal-def! outermost-env args)
+          #_
+          (do (apply mal-def! outermost-env args)
+              (prn (->> outermost-env :data deref keys (map :datum-val))))
 
           ;; do
           (types/->MalDatum :symbol 'do)
@@ -107,16 +117,21 @@
           ;; eval
           (types/->MalDatum :symbol 'eval)
           (let [[ast & _] args]
+            #_ ;; wrong but I do not undertand why right now.
+            ;; likely ast isn't an ast... wrong type
+            (EVAL (eval-ast ast env) env)
             (EVAL (EVAL ast env) env))
 
           ;; fn*
           (types/->MalDatum :symbol 'fn*)
           (let [[binds body] args]
-            (types/->MalDatum
-              :fn*
-              {:ast body
-               :binds binds
-               :f-env env}))
+            (with-meta
+              (types/->MalDatum
+                :fn*
+                {:ast body
+                 :binds binds
+                 :f-env env})
+              {:type :types/fn*}))
 
           ;; let*
           (types/->MalDatum :symbol 'let*)
@@ -174,6 +189,7 @@
               (throw (ex-info (format "Unable to resolve symbol: %s in this context"
                                       (:datum-val ast))
                               {:cause :undefined-symbol
+                               ;; #_#_ ;; recursive, blows up!
                                :env env
                                :symbol ast})))
     :list (->> ast :datum-val (mapv #(EVAL % env)) (types/->MalDatum :list))
@@ -239,7 +255,8 @@
   "Add to the mutable env."
   [env]
   (rep "(def! not (fn* (a) (if a false true)))" env)
-  (rep "(def! load-file (fn* (f) (eval (read-string (str \"(do \" (slurp f) \"\nnil)\")))))" env)
+  #_(rep "(def! load-file (fn* (f) (eval (read-string (str \"(do \" (slurp f) \"\nnil)\")))))" env)
+  (rep "(def! load-file (fn* (f) (eval (read-string (str \"(do \" (slurp f) \")\")))))" env)
   (rep "(def! atom? (fn* (x) (= \"atom\" (type x))))" env)
   )
 

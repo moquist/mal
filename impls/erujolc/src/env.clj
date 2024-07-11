@@ -38,8 +38,15 @@
         (@data k)
         (throw (ex-info (format "%s not found, total bummer" (:datum-val k))
                         {:cause :ns-resolve-failed
-                         #_#_ ;; recursive... blows up!
-                         :env this}))))))
+                         ;; dont' print 'this, it's recursive... blows up!
+                         :env this})))))
+  #_#_
+  Object
+  (toString [this]
+    (format "#<MalEnvironer>%s" @(:data this))))
+
+(defmethod clojure.core/print-method MalEnvironer [env, writer]
+  (prn (format "#<MalEnvironer>%s" (-> env :data deref keys))))
 
 (defn handle-variadic [binds exprs]
   (loop [binds binds
