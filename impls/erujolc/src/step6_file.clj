@@ -35,9 +35,9 @@
 (declare eval-ast)
 (defn EVAL
   "x and return value are always MalDatum"
-  [x outermost-env]
+  [x env]
   (loop [x x
-         env outermost-env]
+         env env]
     (cond
       (-> x :typ (not= :list))
       (eval-ast x env)
@@ -93,10 +93,7 @@
 
           ;; def!
           (types/->MalDatum :symbol 'def!)
-          (apply mal-def! outermost-env args)
-          #_
-          (do (apply mal-def! outermost-env args)
-              (prn (->> outermost-env :data deref keys (map :datum-val))))
+          (apply mal-def! env args)
 
           ;; do
           (types/->MalDatum :symbol 'do)
@@ -255,8 +252,7 @@
   "Add to the mutable env."
   [env]
   (rep "(def! not (fn* (a) (if a false true)))" env)
-  #_(rep "(def! load-file (fn* (f) (eval (read-string (str \"(do \" (slurp f) \"\nnil)\")))))" env)
-  (rep "(def! load-file (fn* (f) (eval (read-string (str \"(do \" (slurp f) \")\")))))" env)
+  (rep "(def! load-file (fn* (f) (eval (read-string (str \"(do \" (slurp f) \"\nnil)\")))))" env)
   (rep "(def! atom? (fn* (x) (= \"atom\" (type x))))" env)
   )
 
