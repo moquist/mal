@@ -24,7 +24,22 @@
               #"not found"
               (= (env/get e :g) "whiz"))))
       (testing "env NOT immutable"
-        (is (= (env/get e :g) "whiz"))))))
+        (is (= (env/get e :g) "whiz"))))
+    (testing "def"
+      (let [e2 (env/mal-environer e [:x :y :z] [9 8 7])
+            [e3 _] (env/def e2 :h "whiz")]
+        (is (= (env/get e3 :h) "whiz"))
+        (testing "def does not def in nested (non-outermost) env"
+          (is (-> e3 :data deref :h nil?))))
+      #_
+      (testing "env immutable"
+        (is (thrown-with-msg?
+              clojure.lang.ExceptionInfo
+              #"not found"
+              (= (env/get e :g) "whiz"))))
+      (testing "env NOT immutable"
+        (is (= (env/get e :g) "whiz"))))
+    ))
 
 (deftest handle-variadic
   (is (= (env/handle-variadic [:a :b :c] [1 2 3])

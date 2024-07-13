@@ -18,12 +18,8 @@
 (defn mal-def!
   "Set k to the evaluated form in the outermost env, returning the evaluated form value."
   [env k form]
-  (let [v (EVAL form env)
-        outermost-env (loop [{:keys [outer] :as x} env]
-                        (if (satisfies? env/MalEnviron outer)
-                          (recur outer)
-                          x))]
-    (env/set outermost-env k v)
+  (let [v (EVAL form env)]
+    (env/def env k v)
     v))
 
 (def mal-specials

@@ -5,6 +5,8 @@
 (defprotocol MalEnviron
   (-set [this k v]
     "Add this kv pair to env.")
+  (-def [this k v]
+    "Add this kv pair to the outermost env. This is to support 'def from inside a 'fn with its local bind-context env.")
   (-find [this k]
     "Recursively search this env and then its parents for k. Return the env containing k.")
   (-get [this k]
@@ -12,6 +14,10 @@
 
 (defn set [this k v]
   (-set this k v)
+  [this v])
+
+(defn def [this k v]
+  (-def this k v)
   [this v])
 
 (defn find [this k]
@@ -25,8 +31,13 @@
   (-set [this k v]
     (swap! data assoc k v)
     this
-    #_
+    #_ ;; maybe immutable at some point.... but it seems hard.
     (assoc-in this [:data k] v))
+  (-def [this k v]
+    (loop [{:keys [outer] :as x} this]
+      (if (satisfies? env/MalEnviron outer)
+        (recur outer)
+        (-set x k v))))
   (-find [this k]
     (cond
       (contains? @data k) this
