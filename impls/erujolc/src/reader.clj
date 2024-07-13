@@ -10,7 +10,17 @@
   Returns a seq of vectors containing [original-string parsed-token]"
   [code]
   (->> (re-seq
+         ;; from when I first started this? before it handled non-terminated strings?
          ;; old: #"[\s,]*(~@|[\[\]{}()'`~^@]|\"(?:\\.|[^\\\"])*\"|;.*|[^\s\[\]{}('\"`,;)]*)"
+         ;; ignore any number of spaces or commas
+         ;; tokenize:
+         ;;   the literal ~@
+         ;;   each square bracket, paren, brace, single quote, backtick, tilde, caret, @
+         ;;   a double-quoted string, including escaped quotes (captured even without ending quote)
+         ;;   comments
+         ;;   all sequences of non-special characters
+
+         ;; the new one handles non-terminated strings
                  #"[\s,]*(~@|[\[\]{}()'`~^@]|\"(?:\\.|[^\\\"])*\"?|;.*|[^\s\[\]{}('\"`,;)]*)"
           code)
        (remove #(-> % second (= "")))))
