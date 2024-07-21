@@ -49,7 +49,7 @@
   (is (= (read-atom-helper "false") (types/->MalDatum :bool false)))
   (is (= (read-atom-helper "true") (types/->MalDatum :bool true)))
   (is (= (read-atom-helper "\"true\"") (types/->MalDatum :string "true")))
-  
+
   )
 
 (defn read-coll-helper [x]

@@ -108,13 +108,17 @@
          )
        ))))
 
-(defn wrap-read [sym reader]
+(defn wrap-read
+  "general reader macro support"
+  [sym reader]
   (let [[reader form] (read-form reader)]
     [reader
      (types/->MalDatum :list
                        [(types/->MalDatum :symbol sym) form])]))
 
-(defn wrap-read-meta [sym reader]
+(defn wrap-read-meta
+  "^ reader macro support"
+  [sym reader]
   (let [[reader metadata] (read-form reader)
         [reader data] (read-form reader)]
     [reader

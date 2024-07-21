@@ -8,7 +8,7 @@
             types
             utils))
 
-#_ ;; too crude
+#_ ;; too crude for avoiding recursive env-printing
 (set! *print-level* 2)
 
 ;; ========================================
