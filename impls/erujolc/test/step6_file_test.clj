@@ -12,8 +12,14 @@
     (is (= (step6/EVAL form env)
            (types/->MalDatum :undetermined 3)))
     (is (= (step6/EVAL form2 env)
-           (types/->MalDatum :undetermined 5)))
-    ))
+           (types/->MalDatum :undetermined 5))))
+  (testing "eval doesn't use local env"
+    (let [env (step6/gen-env core/built-in-env)
+          [_reader form] (step6/READ "(let* (a 1)
+                                        (eval (read-string \"a\")))")]
+      (step6/rep "(def! a 7)" env)
+      (is (= (step6/EVAL form env)
+             (types/->MalDatum :int 7))))))
 
 #_ ; dup, but used for debugging and comprehension
 (deftest fncall-test

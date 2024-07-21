@@ -113,11 +113,13 @@
 
           ;; eval
           (types/->MalDatum :symbol 'eval)
-          (let [[ast & _] args]
+          (let [[ast & _] args
+                outermost-env (env/outermost env)]
             #_ ;; wrong but I do not undertand why right now.
             ;; likely ast isn't an ast... wrong type
             (EVAL (eval-ast ast env) env)
-            (EVAL (EVAL ast env) env))
+            (EVAL (EVAL ast env)
+                  outermost-env))
 
           ;; fn*
           (types/->MalDatum :symbol 'fn*)
