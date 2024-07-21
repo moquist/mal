@@ -260,10 +260,20 @@
 
 (defn -main
   "Prompt for input, process the input with READ-EVAL-PRINT, and recur."
-  []
+  [& args]
   (let [env (gen-env core/built-in-env)]
     (extend-env env)
-    (loop []
-      (when-let [input (prompt)]
-        (LOOP input env)
-        (recur)))))
+    (env/def
+      env
+      (types/mal-datum :symbol '*ARGV*)
+      (types/mal-datum :list (mapv (partial types/mal-datum :string)
+                                   (rest args))))
+    (if (seq args)
+      ;; cli execution
+      (rep (format "(load-file \"%s\")" (first args)) env)
+
+      ;; repl
+      (loop []
+        (when-let [input (prompt)]
+          (LOOP input env)
+          (recur))))))
