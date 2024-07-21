@@ -117,6 +117,32 @@
                                        }})))
   )
 
+
+(defn read-form-helper [x]
+  (-> x reader/tokenize (reader/->MalReader 0)))
+
+(deftest read-form
+  (testing "read fn call"
+    (is (= (second (reader/read-form (read-form-helper "(monkey :jam \"pants\" 2)")))
+           #types.MalDatum{:typ :list,
+                           :datum-val [#types.MalDatum{:typ :symbol,
+                                                       :datum-val monkey}
+                                       #types.MalDatum{:typ :keyword,
+                                                       :datum-val :jam}
+                                       #types.MalDatum{:typ :string,
+                                                       :datum-val "pants"}
+                                       #types.MalDatum{:typ :int, :datum-val 2}]}))
+    (is (= (second (reader/read-form
+                     (read-form-helper ";; weeble\n ;; gleeble\n\n(monkey :jam \"pants\" 2) ; schmok")))
+           #types.MalDatum{:typ :list,
+                           :datum-val [#types.MalDatum{:typ :symbol,
+                                                       :datum-val monkey}
+                                       #types.MalDatum{:typ :keyword,
+                                                       :datum-val :jam}
+                                       #types.MalDatum{:typ :string,
+                                                       :datum-val "pants"}
+                                       #types.MalDatum{:typ :int, :datum-val 2}]}))))
+
 (deftest wrap-read
   (is (= (second (reader/wrap-read 'booga (reader/->MalReader [[nil "7"]] 0)))
          (types/->MalDatum :list [(types/->MalDatum :symbol 'booga)
@@ -145,7 +171,7 @@
          (types/->MalDatum :list
                            [(types/->MalDatum :symbol 'a)
                             (types/->MalDatum :keyword :a)])))
-  
+
   (is (= (second (reader/mal-read-string "'a"))
          (types/->MalDatum :list
                            [(types/->MalDatum :symbol 'quote)
@@ -157,3 +183,4 @@
                   (types/->MalDatum :map {(types/->MalDatum :keyword :a)
                                           (types/->MalDatum :int 1)})])))
   )
+

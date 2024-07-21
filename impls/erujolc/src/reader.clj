@@ -28,6 +28,7 @@
 (comment
   (tokenize "(+ 3 7)")
   (tokenize "    (   + 3 7   )    ")
+  (tokenize ";; hi\n    (   + 3 7   )    ")
   )
 
 (utils/defprotocol-once MalRead
@@ -182,19 +183,19 @@
     (cond
       (= ::peeked-into-the-abyss tok) (do (utils/debug ::read-form :tok2 tok)
                                           [reader tok]) ; done!
-      (= \; (first tok)) nil ; comment!
-      :default (do (utils/debug ::read-form :tok3 tok)
-                   (condp = tok
-                     "(" (read-coll :list (mal-step reader))
-                     "[" (read-coll :vector (mal-step reader))
-                     "{" (read-coll :map (mal-step reader))
-                     "'" (wrap-read 'quote (mal-step reader))
-                     "`" (wrap-read 'quasiquote (mal-step reader))
-                     "~" (wrap-read 'unquote (mal-step reader))
-                     "~@" (wrap-read 'splice-unquote (mal-step reader))
-                     "@" (wrap-read 'deref (mal-step reader))
-                     "^" (wrap-read-meta 'with-meta (mal-step reader))
-                     (read-atom reader))))))
+      (= \; (first tok)) (recur (mal-step reader)); comment!
+      :else (do (utils/debug ::read-form :tok3 tok)
+                (condp = tok
+                  "(" (read-coll :list (mal-step reader))
+                  "[" (read-coll :vector (mal-step reader))
+                  "{" (read-coll :map (mal-step reader))
+                  "'" (wrap-read 'quote (mal-step reader))
+                  "`" (wrap-read 'quasiquote (mal-step reader))
+                  "~" (wrap-read 'unquote (mal-step reader))
+                  "~@" (wrap-read 'splice-unquote (mal-step reader))
+                  "@" (wrap-read 'deref (mal-step reader))
+                  "^" (wrap-read-meta 'with-meta (mal-step reader))
+                  (read-atom reader))))))
 
 (defn mal-read-string
   "Tokenize input string, and then call 'read-form on tokens.
