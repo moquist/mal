@@ -53,3 +53,16 @@
   (let [[_ form] (step3/READ "(let* [a 1, b (* a 2)] (* b b))")]
     (is (= (step3/EVAL form (first (step3/gen-env step3/built-in-env)))
            (types/->MalDatum :undetermined 4)))))
+
+(deftest eval-ast-wut
+  (let [[_ form] (step3/READ "(list 1 2 3)")]
+    (is (= form 
+           (types/->MalDatum :list
+                             [(types/->MalDatum :symbol 'list)
+                              (types/->MalDatum :int 1)
+                              (types/->MalDatum :int 2)
+                              (types/->MalDatum :int 3)
+                              ])))
+    (is (thrown? clojure.lang.ExceptionInfo
+                 (step3/EVAL form (first (step3/gen-env step3/built-in-env)))))
+    ))
