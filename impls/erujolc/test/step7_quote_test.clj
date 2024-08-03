@@ -31,6 +31,17 @@
                              (types/mal-datum :int 8)
                              (types/mal-datum :int 9)])))))
 
+(deftest quote-test
+  (let [env (step7/gen-env core/built-in-env)
+        [_reader form] (step7/READ "(quote (list 1 2 3))")]
+    (is (= (step7/EVAL form env)
+           (types/mal-datum :list
+                            [(types/mal-datum :symbol 'list)
+                             (types/mal-datum :int 1)
+                             (types/mal-datum :int 2)
+                             (types/mal-datum :int 3)]))))
+  )
+
 (deftest eval-vs-eval-ast
   "I keep getting confused which one I want.
   Maybe I have bugs (or just needlessly complex code) because of this confusion.

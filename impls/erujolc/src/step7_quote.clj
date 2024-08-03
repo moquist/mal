@@ -177,6 +177,9 @@
             (types/->MalDatum :type
                               (name (:typ (EVAL x env)))))
 
+          (types/mal-datum :symbol 'quote)
+          (first args)
+
           ;; assume it's a function of some kind
           (let [[f & args] (:datum-val (eval-ast x env))]
             ;; don't print env here, dork. it's got recursive structure in it.
