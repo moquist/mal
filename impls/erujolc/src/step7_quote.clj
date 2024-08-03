@@ -56,8 +56,16 @@
           ;; cons
           (types/mal-datum :symbol 'cons)
           (let [[x lst] (map #(EVAL % env) args)]
+            ;; TODO: ensure lst is a :list
             (types/mal-datum :list
                              (into [x] (:datum-val lst))))
+
+          ;; concat
+          (types/mal-datum :symbol 'concat)
+          (let [lists (map #(:datum-val (EVAL % env)) args)]
+            ;; TODO: ensure lst is a :list
+            (types/mal-datum :list
+                             (vec (apply concat lists))))
 
           ;; deref
           (types/mal-datum :symbol 'deref)

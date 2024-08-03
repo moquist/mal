@@ -15,6 +15,22 @@
                              (types/mal-datum :int 2)
                              (types/mal-datum :int 3)])))))
 
+(deftest concat-test
+  (let [env (step7/gen-env core/built-in-env)
+        [_reader form] (step7/READ "(concat (list 4 5 6) (list 1 2 3) (list 7 8 9))")
+        ]
+    (is (= (step7/EVAL form env)
+           (types/mal-datum :list
+                            [(types/mal-datum :int 4)
+                             (types/mal-datum :int 5)
+                             (types/mal-datum :int 6)
+                             (types/mal-datum :int 1)
+                             (types/mal-datum :int 2)
+                             (types/mal-datum :int 3)
+                             (types/mal-datum :int 7)
+                             (types/mal-datum :int 8)
+                             (types/mal-datum :int 9)])))))
+
 (deftest eval-vs-eval-ast
   "I keep getting confused which one I want.
   Maybe I have bugs (or just needlessly complex code) because of this confusion.
