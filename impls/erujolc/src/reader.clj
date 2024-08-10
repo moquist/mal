@@ -209,3 +209,17 @@
       tokenize
       (->MalReader 0)
       read-form))
+
+
+
+
+(comment
+  (mapcat (fn [x y] [(inc x) (dec y)]) (range 10) (range 50 100))
+  (def mef (mapcat (fn [x y] [(inc x) (dec y)])))
+
+  (defn mattcat [f coll]
+    (seq (reduce (fn [r x]
+                   (into r (f x)))
+                 []
+                 coll))))
+

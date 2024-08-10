@@ -27,6 +27,36 @@
   "map from atom-id to value"
   (atom {}))
 
+(defn quasiquote [ast]
+  (let [{:keys [typ datum-val]} ast]
+    (cond
+      (and (= :list typ)
+           (-> datum-val first (= (types/mal-datum :symbol 'unquote))))
+      (second datum-val)
+
+      (= :list typ)
+      (if (empty? datum-val)
+        ast
+        (let [[elt & elts] datum-val
+               {elt-typ :typ elt-datum-val :datum-val} elt
+               mal-elts (types/mal-datum :list elts)]
+          (if (and (= elt-typ :list)
+                   (-> elt-datum-val first (= (types/mal-datum :symbol 'splice-unquote))))
+            (types/mal-datum :list [(types/mal-datum :symbol 'concat)
+                                    (second elt-datum-val)
+                                    (quasiquote mal-elts)])
+            (types/mal-datum :list [(types/mal-datum :symbol 'cons)
+                                    (quasiquote elt)
+                                    (quasiquote mal-elts)]))))
+
+      (#{:map :symbol} typ)
+      (types/mal-datum :list
+                       [(types/mal-datum :symbol 'quote)
+                        ast])
+
+      :else ast))
+  )
+
 ;; ========================================
 ;; EVAL
 (declare eval-ast)
@@ -179,6 +209,12 @@
 
           (types/mal-datum :symbol 'quote)
           (first args)
+
+          (types/mal-datum :symbol 'quasiquoteexpand)
+          (quasiquote (first args))
+
+          (types/mal-datum :symbol 'quasiquote)
+          (recur (quasiquote (first args)) env)
 
           ;; assume it's a function of some kind
           (let [[f & args] (:datum-val (eval-ast x env))]
