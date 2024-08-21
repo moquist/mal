@@ -39,8 +39,62 @@
                             [(types/mal-datum :symbol 'list)
                              (types/mal-datum :int 1)
                              (types/mal-datum :int 2)
-                             (types/mal-datum :int 3)]))))
-  )
+                             (types/mal-datum :int 3)])))))
+
+(deftest quasiquote-test
+  (let [env (step7/gen-env core/built-in-env)
+        cases [{:description "basic quasiquote"
+                :input "(quasiquote (list 1 2 3))"
+                :expected (types/mal-datum :list
+                                           [(types/mal-datum :symbol 'list)
+                                            (types/mal-datum :int 1)
+                                            (types/mal-datum :int 2)
+                                            (types/mal-datum :int 3)])}
+               {:description "quasiquote with unquote"
+                :input "(quasiquote (unquote (list 1 2 3)))"
+                :expected (types/mal-datum :list
+                                           [(types/mal-datum :int 1)
+                                            (types/mal-datum :int 2)
+                                            (types/mal-datum :int 3)])}
+
+               {:description "quasiquote with nested unquote"
+                :input "(quasiquote (list \"meep\" (unquote (list 1 2 3))))"
+                :expected (types/mal-datum
+                            :list
+                            [(types/mal-datum :symbol 'list)
+                             (types/mal-datum :string "meep")
+                             (types/mal-datum
+                               :list
+                               [(types/mal-datum :int 1)
+                                (types/mal-datum :int 2)
+                                (types/mal-datum :int 3)])])}
+
+               {:description "quasiquote with splice-unquote and an arbitrary symbol"
+                :input "(quasiquote (beegle \"meep\" (splice-unquote (list 1 2 3))))"
+                :expected (types/mal-datum
+                            :list
+                            [(types/mal-datum :symbol 'beegle)
+                             (types/mal-datum :string "meep")
+                             (types/mal-datum :int 1)
+                             (types/mal-datum :int 2)
+                             (types/mal-datum :int 3)])}
+
+               {:description "quasiquote with splice-unquote and a map"
+                :input "(quasiquote (beegle {:a 1} (splice-unquote (list 1 2 3))))"
+                :expected (types/mal-datum
+                            :list
+                            [(types/mal-datum :symbol 'beegle)
+                             (types/mal-datum :map {(types/mal-datum :keyword :a)
+                                                    (types/mal-datum :int 1)})
+                             (types/mal-datum :int 1)
+                             (types/mal-datum :int 2)
+                             (types/mal-datum :int 3)])}
+               ]]
+    (doseq [{:keys [description input expected]} cases
+            :let [[_reader form] (step7/READ input)
+                  result (step7/EVAL form env)]]
+      (testing description
+        (is (= result expected))))))
 
 (deftest eval-vs-eval-ast
   "I keep getting confused which one I want.
@@ -90,6 +144,8 @@
         (is (= (step7/EVAL mal-data env)
                (types/mal-datum :undetermined 15))))))
   )
+
+
 
 
 

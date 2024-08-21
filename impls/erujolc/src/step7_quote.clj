@@ -34,20 +34,25 @@
            (-> datum-val first (= (types/mal-datum :symbol 'unquote))))
       (second datum-val)
 
-      (= :list typ)
-      (if (empty? datum-val)
-        ast
-        (let [[elt & elts] datum-val
-               {elt-typ :typ elt-datum-val :datum-val} elt
-               mal-elts (types/mal-datum :list elts)]
-          (if (and (= elt-typ :list)
-                   (-> elt-datum-val first (= (types/mal-datum :symbol 'splice-unquote))))
-            (types/mal-datum :list [(types/mal-datum :symbol 'concat)
-                                    (second elt-datum-val)
-                                    (quasiquote mal-elts)])
-            (types/mal-datum :list [(types/mal-datum :symbol 'cons)
-                                    (quasiquote elt)
-                                    (quasiquote mal-elts)]))))
+      (#{:list :vector} typ)
+      (let [x (if (empty? datum-val)
+                ast
+                (let [[elt & elts] datum-val
+                      {elt-typ :typ elt-datum-val :datum-val} elt
+                      mal-elts (types/mal-datum :list elts)]
+                  (if (and (= elt-typ :list)
+                           (-> elt-datum-val first (= (types/mal-datum :symbol 'splice-unquote))))
+                    (types/mal-datum :list [(types/mal-datum :symbol 'concat)
+                                            (second elt-datum-val)
+                                            (quasiquote mal-elts)])
+                    (types/mal-datum :list [(types/mal-datum :symbol 'cons)
+                                            (quasiquote elt)
+                                            (quasiquote mal-elts)]))))]
+        (if (= :list typ)
+          x
+          (types/mal-datum :list [(types/mal-datum :symbol 'vec)
+                                  x]))
+        )
 
       (#{:map :symbol} typ)
       (types/mal-datum :list
@@ -211,7 +216,21 @@
           (first args)
 
           (types/mal-datum :symbol 'quasiquoteexpand)
-          (quasiquote (first args))
+          (let [x (quasiquote (first args))]
+            #_
+            (prn :x x)
+            x
+            )
+
+          (types/mal-datum :symbol 'vec)
+          (let [[arg & _too-many-args?] args
+                arg (EVAL arg env)
+                {:keys [typ datum-val]} arg]
+            (if-not (#{:list :vector} typ)
+              (throw (ex-info "argument to vec must be a list or a vector"
+                              {:cause :vec-argument-must-be-list-or-vector
+                               :arg arg}))
+              (types/mal-datum :vector datum-val)))
 
           (types/mal-datum :symbol 'quasiquote)
           (recur (quasiquote (first args)) env)
