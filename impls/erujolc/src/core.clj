@@ -87,7 +87,7 @@
    ['pr-str mal-pr-str]
    ['str mal-str]
    ['read-string mal-read-string]
-   ['list mal-list]
+   ['list mal-list] ;; this is why (list ...) works. I keep forgetting.
    ['list? mal-list?]
    ['empty? mal-empty?]
    ['count mal-count]
