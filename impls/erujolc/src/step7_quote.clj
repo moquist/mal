@@ -30,7 +30,7 @@
 (declare quasiquote)
 (defn quasiquote-helper [{:keys [typ datum-val] :as ast}]
   (let [x (if (empty? datum-val)
-            ast
+            (types/mal-datum :list []) ; mal tests require that empty ast always be a list, not a vec
             (let [[elt & elts] datum-val
                   {elt-typ :typ elt-datum-val :datum-val} elt
                   mal-elts (types/mal-datum :list elts)]
