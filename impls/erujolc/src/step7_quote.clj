@@ -27,6 +27,28 @@
   "map from atom-id to value"
   (atom {}))
 
+(declare quasiquote)
+(defn quasiquote-helper [{:keys [typ datum-val] :as ast}]
+  (let [x (if (empty? datum-val)
+            ast
+            (let [[elt & elts] datum-val
+                  {elt-typ :typ elt-datum-val :datum-val} elt
+                  mal-elts (types/mal-datum :list elts)]
+              (if (and (= elt-typ :list)
+                       (-> elt-datum-val first (= (types/mal-datum :symbol 'splice-unquote))))
+                (types/mal-datum :list [(types/mal-datum :symbol 'concat)
+                                        (second elt-datum-val)
+                                        (quasiquote-helper mal-elts)])
+                (types/mal-datum :list [(types/mal-datum :symbol 'cons)
+                                        (quasiquote elt)
+                                        (quasiquote-helper mal-elts)]))))]
+    (if (= :list typ)
+      x
+      (types/mal-datum :list [(types/mal-datum :symbol 'vec)
+                              x]))
+    )
+  )
+
 (defn quasiquote [ast]
   #_
   (prn :moquist-ast ast)
@@ -37,30 +59,7 @@
            (second datum-val)
 
            (#{:list :vector} typ)
-           (let [x (if (empty? datum-val)
-                     ast
-                     (let [[elt & elts] datum-val
-                           {elt-typ :typ elt-datum-val :datum-val} elt
-                           mal-elts (types/mal-datum :list elts)]
-                       (if (and (= elt-typ :list)
-                                (-> elt-datum-val first (= (types/mal-datum :symbol 'splice-unquote))))
-                         (do
-                           #_
-                           (prn :moquist-branch1 :elt-datum-val elt-datum-val :mal-elts mal-elts)
-                           (types/mal-datum :list [(types/mal-datum :symbol 'concat)
-                                                   (second elt-datum-val)
-                                                   (quasiquote mal-elts)]))
-                         (do
-                           #_
-                           (prn :moquist-branch2 :elt-datum-val elt-datum-val :mal-elts mal-elts)
-                           (types/mal-datum :list [(types/mal-datum :symbol 'cons)
-                                                   (quasiquote elt)
-                                                   (quasiquote mal-elts)])))))]
-             (if (= :list typ)
-               x
-               (types/mal-datum :list [(types/mal-datum :symbol 'vec)
-                                       x]))
-             )
+           (quasiquote-helper ast)
 
            (#{:map :symbol} typ)
            (types/mal-datum :list
