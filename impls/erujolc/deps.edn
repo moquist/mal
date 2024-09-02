@@ -8,6 +8,7 @@
            :step5 {:main-opts ["-m" step5-tco]}
            :step6 {:main-opts ["-m" step6-file]}
            :step7 {:main-opts ["-m" step7-quote]}
+           :step8 {:main-opts ["-m" step8-macros]}
 
            :eastwood {:main-opts ["-m" "eastwood.lint" {:source-paths ["src"]}]
                       :extra-deps {jonase/eastwood {:mvn/version "RELEASE"}}}
