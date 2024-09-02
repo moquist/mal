@@ -22,6 +22,16 @@
     (env/def env k v)
     v))
 
+(defn mal-defmacro!
+  "Set k to the evaluated form in the outermost env, returning the evaluated form value. Differs from def! by assuming that the :datum-val of v is a map, and setting macro? true in that map."
+  [env k form]
+  (let [v (EVAL form env)]
+    (env/def
+      env
+      k
+      (assoc-in v [:datum-val :macro?] true))
+    v))
+
 (def mal-atoms
   ;; could just use clojure atoms, but seems interesting to have a slightly different model
   "map from atom-id to value"
@@ -142,6 +152,10 @@
           ;; def!
           (types/->MalDatum :symbol 'def!)
           (apply mal-def! env args)
+
+          ;; defmacro!
+          (types/->MalDatum :symbol 'defmacro!)
+          (apply mal-defmacro! env args)
 
           ;; do
           (types/->MalDatum :symbol 'do)
