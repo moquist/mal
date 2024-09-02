@@ -177,7 +177,8 @@
                 :fn*
                 {:ast body
                  :binds binds
-                 :f-env env})
+                 :f-env env
+                 :macro? false})
               {:type :types/fn*}))
 
           ;; let*
