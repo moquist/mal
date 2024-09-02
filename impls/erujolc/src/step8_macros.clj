@@ -74,6 +74,18 @@
 
       :else ast)))
 
+(defn ast->maybe-macro-call
+  "If ast contains a macro call, return the macro. Else return falsy."
+  [{:as ast :keys [typ datum-val]} env]
+  (when (= typ :list)
+    (let [[{first-elem-typ :typ :as first-elem} & args] datum-val]
+      (when (= first-elem-typ :symbol)
+        (let [{:keys [typ datum-val]} (env/get env first-elem)]
+          (and (= typ :fn*)
+               (-> datum-val :macro?)
+               datum-val))))))
+
+
 ;; ========================================
 ;; EVAL
 (declare eval-ast)

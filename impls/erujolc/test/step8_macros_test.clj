@@ -33,3 +33,11 @@
             :datum-val
             :macro?))))
 
+(deftest ast->maybe-macro-call-test
+  (let [[_result env] (read-eval-one-form "(defmacro! monkey (fn* () 1))")
+        [ast env] (read-one-form "(monkey)" env)]
+    (is (step8/ast->maybe-macro-call ast env)))
+  (let [[ast env] (read-one-form "(+ 1 2)")]
+    (is (not (step8/ast->maybe-macro-call ast env)))))
+
+
