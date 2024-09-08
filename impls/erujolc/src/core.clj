@@ -10,6 +10,15 @@
     (types/->MalDatum :undetermined
                       (apply f (map :datum-val args)))))
 
+(defn malify-fn2 [f]
+  (fn [& args]
+    (try
+      (apply f (map :datum-val args))
+      (catch Exception e
+        (throw (ex-info (format "Caught exception: %s" e)
+                        {:cause :host-lang-exception
+                         :value e}))))))
+
 (defn mal-prn [& xs]
   (println (str/join " " (mapv #(printer/mal-print-string % true) xs)))
   types/mal-nil)
@@ -89,6 +98,9 @@
    ['read-string mal-read-string]
    ['list mal-list] ;; this is why (list ...) works. I keep forgetting.
    ['list? mal-list?]
+   ['nth (malify-fn2 clojure.core/nth)]
+   ['first (malify-fn2 clojure.core/first)]
+   ['rest (malify-fn clojure.core/rest)]
    ['empty? mal-empty?]
    ['count mal-count]
    ['= (mal-comp-fn =)]
