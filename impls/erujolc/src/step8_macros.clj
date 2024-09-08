@@ -80,198 +80,229 @@
   (when (= typ :list)
     (let [[{first-elem-typ :typ :as first-elem} & args] datum-val]
       (when (= first-elem-typ :symbol)
-        (let [{:keys [typ datum-val]} (env/get env first-elem)]
+        (let [{:keys [typ datum-val]} (env/get-safe env first-elem)]
           (and (= typ :fn*)
                (-> datum-val :macro?)
                datum-val))))))
 
+(declare EVAL)
+(defn mal-macroexpand [ast env]
+  ;; N.B.: env is mutable, no need to bind it in the loop.
+  #_
+  (prn :moquist-mal-macroexpand1 ast)
+  (loop [ast ast]
+    #_
+    (prn :moquist-mal-macroexpand2 ast)
+    (if (ast->maybe-macro-call ast env)
+      (do
+        #_
+        (prn :moquist-mal-macroexpand3 ast :true-wut? (ast->maybe-macro-call ast env))
+        (recur (EVAL ast env false)))
+      (do
+        #_
+        (prn :moquist-mal-macroexpand4 ast)
+        ast))))
 
 ;; ========================================
 ;; EVAL
 (declare eval-ast)
 (defn EVAL
   "x and return value are always MalDatum"
-  [x env]
-  (loop [x x
-         env env]
-    (cond
-      (-> x :typ (not= :list))
-      (eval-ast x env)
+  ([x env]
+   (EVAL x env true))
+  ([x env macroexpand-moquist?]
+   #_
+   (prn :moquist-x1 x)
+   (let [x (if-not macroexpand-moquist?
+             x
+             (do
+               #_
+               (prn :moquist-macroexpand-moquist? x)
+               (mal-macroexpand x env)))]
+     #_
+     (prn :moquist-x2 x)
+     (cond
+       (-> x :typ (not= :list))
+       (eval-ast x env)
 
-      (-> x :datum-val empty?)
-      (types/->MalDatum :list [])
+       (-> x :datum-val empty?)
+       (types/->MalDatum :list [])
 
-      :else
-      (let [[f & args] (:datum-val x)]
-        (condp = f
-          ;; atom
-          (types/->MalDatum :symbol 'atom)
-          (let [[v & _err] args
-                atom-id (gensym)]
-            (swap! mal-atoms assoc atom-id (EVAL v env))
-            (-> (types/mal-datum :atom atom-id)
-                (assoc :meta-datum {:mal-atoms mal-atoms})))
+       :else
+       (let [[f & args] (:datum-val x)]
+         (condp = f
+           ;; atom
+           (types/->MalDatum :symbol 'atom)
+           (let [[v & _err] args
+                 atom-id (gensym)]
+             (swap! mal-atoms assoc atom-id (EVAL v env))
+             (-> (types/mal-datum :atom atom-id)
+                 (assoc :meta-datum {:mal-atoms mal-atoms})))
 
-          ;; cons
-          (types/mal-datum :symbol 'cons)
-          (let [[x lst] (map #(EVAL % env) args)]
-            ;; TODO: ensure lst is a :list
-            (types/mal-datum :list
-                             (into [x] (:datum-val lst))))
+           ;; cons
+           (types/mal-datum :symbol 'cons)
+           (let [[x lst] (map #(EVAL % env) args)]
+             ;; TODO: ensure lst is a :list
+             (types/mal-datum :list
+                              (into [x] (:datum-val lst))))
 
-          ;; concat
-          (types/mal-datum :symbol 'concat)
-          (let [lists (map #(:datum-val (EVAL % env)) args)]
-            ;; TODO: ensure lst is a :list
-            (types/mal-datum :list
-                             (vec (apply concat lists))))
+           ;; concat
+           (types/mal-datum :symbol 'concat)
+           (let [lists (map #(:datum-val (EVAL % env)) args)]
+             ;; TODO: ensure lst is a :list
+             (types/mal-datum :list
+                              (vec (apply concat lists))))
 
-          ;; deref
-          (types/mal-datum :symbol 'deref)
-          (let [[a & _err] args
-                a (EVAL a env)
-                atom-id (:datum-val a)]
-            (-> mal-atoms deref (get atom-id)))
+           ;; deref
+           (types/mal-datum :symbol 'deref)
+           (let [[a & _err] args
+                 a (EVAL a env)
+                 atom-id (:datum-val a)]
+             (-> mal-atoms deref (get atom-id)))
 
-          ;; reset
-          (types/mal-datum :symbol 'reset!)
-          (let [[a v & _err] args
-                a (EVAL a env)
-                v (EVAL v env)
-                atom-id (:datum-val a)]
-            (swap! mal-atoms assoc atom-id v)
-            v)
+           ;; reset
+           (types/mal-datum :symbol 'reset!)
+           (let [[a v & _err] args
+                 a (EVAL a env)
+                 v (EVAL v env)
+                 atom-id (:datum-val a)]
+             (swap! mal-atoms assoc atom-id v)
+             v)
 
-          ;; swap!
-          (types/mal-datum :symbol 'swap!)
-          (let [[a f & f-args] (:datum-val (eval-ast (types/mal-datum :list args) env))
-                atom-id (:datum-val a)
-                atom-val (-> mal-atoms deref (get atom-id))
-                new-val (EVAL
-                          (types/mal-datum
-                            :list
-                            (into
-                              [f atom-val]
-                              f-args))
-                          env)]
-            (swap! mal-atoms assoc atom-id new-val)
-            new-val)
+           ;; swap!
+           (types/mal-datum :symbol 'swap!)
+           (let [[a f & f-args] (:datum-val (eval-ast (types/mal-datum :list args) env))
+                 atom-id (:datum-val a)
+                 atom-val (-> mal-atoms deref (get atom-id))
+                 new-val (EVAL
+                           (types/mal-datum
+                             :list
+                             (into
+                               [f atom-val]
+                               f-args))
+                           env)]
+             (swap! mal-atoms assoc atom-id new-val)
+             new-val)
 
-          ;; env-keys
-          (types/mal-datum :symbol 'env-keys)
-          (prn (->> env :data deref keys (map :datum-val)))
+           ;; env-keys
+           (types/mal-datum :symbol 'env-keys)
+           (prn (->> env :data deref keys (map :datum-val)))
 
-          ;; def!
-          (types/->MalDatum :symbol 'def!)
-          (apply mal-def! env args)
+           ;; def!
+           (types/->MalDatum :symbol 'def!)
+           (apply mal-def! env args)
 
-          ;; defmacro!
-          (types/->MalDatum :symbol 'defmacro!)
-          (apply mal-defmacro! env args)
+           ;; defmacro!
+           (types/->MalDatum :symbol 'defmacro!)
+           (apply mal-defmacro! env args)
 
-          ;; do
-          (types/->MalDatum :symbol 'do)
-          (do
-            (dorun (map #(EVAL % env) (butlast args)))
-            (recur (last args) env))
+           ;; do
+           (types/->MalDatum :symbol 'do)
+           (do
+             (dorun (map #(EVAL % env) (butlast args)))
+             (recur (last args) env true))
 
-          ;; if
-          (types/->MalDatum :symbol 'if)
-          (let [[condition then & [else]] args
-                condition? (:datum-val (EVAL condition env))]
-            (if-not (contains? #{nil false} condition?)
-              (recur then env)
-              (if else
-                (recur else env)
-                (types/->MalDatum :nil nil))))
+           ;; if
+           (types/->MalDatum :symbol 'if)
+           (let [[condition then & [else]] args
+                 condition? (:datum-val (EVAL condition env))]
+             (if-not (contains? #{nil false} condition?)
+               (recur then env true)
+               (if else
+                 (recur else env true)
+                 (types/->MalDatum :nil nil))))
 
-          ;; eval
-          (types/->MalDatum :symbol 'eval)
-          (let [[ast & _] args
-                outermost-env (env/outermost env)]
-            #_ ;; wrong but I do not undertand why right now.
-            ;; likely ast isn't an ast... wrong type
-            (EVAL (eval-ast ast env) env)
-            (EVAL (EVAL ast env)
-                  outermost-env))
+           ;; eval
+           (types/->MalDatum :symbol 'eval)
+           (let [[ast & _] args
+                 outermost-env (env/outermost env)]
+             (EVAL (EVAL ast env)
+                   outermost-env))
 
-          ;; fn*
-          (types/->MalDatum :symbol 'fn*)
-          (let [[binds body] args]
-            (with-meta
-              (types/->MalDatum
-                :fn*
-                {:ast body
-                 :binds binds
-                 :f-env env
-                 :macro? false})
-              {:type :types/fn*}))
+           ;; macroexpand
+           (types/mal-datum :symbol 'macroexpand)
+           (let [[ast & _] args]
+             #_
+             (prn :moquist-macroexpand-ast ast :args args)
+             (mal-macroexpand ast env))
 
-          ;; let*
-          (types/->MalDatum :symbol 'let*)
-          ;; TODO: allow more than one form
-          (let [[bindings form] args]
-            (when-not (-> bindings :typ (#{:vector :list}))
-              (throw (ex-info "bindings form must be a list or a vector"
-                              {:cause :bindgings-form-non-vector
-                               :bindings bindings})))
-            (when (-> bindings :datum-val count odd?)
-              (throw (ex-info "bindings vector must have an even number of forms"
-                              {:cause :bindings-vector-odd-number-of-forms
-                               :bindings bindings})))
-            (let [[env2 & _] (reduce (fn [[r & _] [k v]]
-                                       (env/set r k (EVAL v r)))
-                                     [(env/mal-environer env nil nil)]
-                                     (->> bindings :datum-val (partition 2)))]
-              (recur form env2)))
+           ;; fn*
+           (types/->MalDatum :symbol 'fn*)
+           (let [[binds body] args]
+             (with-meta
+               (types/->MalDatum
+                 :fn*
+                 {:ast body
+                  :binds binds
+                  :f-env env
+                  :macro? false})
+               {:type :types/fn*}))
 
-          ;; read-string
-          (types/->MalDatum :symbol 'read-string)
-          (core/mal-read-string (EVAL (first args) env))
+           ;; let*
+           (types/->MalDatum :symbol 'let*)
+           ;; TODO: allow more than one form
+           (let [[bindings form] args]
+             (when-not (-> bindings :typ (#{:vector :list}))
+               (throw (ex-info "bindings form must be a list or a vector"
+                               {:cause :bindgings-form-non-vector
+                                :bindings bindings})))
+             (when (-> bindings :datum-val count odd?)
+               (throw (ex-info "bindings vector must have an even number of forms"
+                               {:cause :bindings-vector-odd-number-of-forms
+                                :bindings bindings})))
+             (let [[env2 & _] (reduce (fn [[r & _] [k v]]
+                                        (env/set r k (EVAL v r)))
+                                      [(env/mal-environer env nil nil)]
+                                      (->> bindings :datum-val (partition 2)))]
+               (recur form env2 true)))
 
-          ;; slurp
-          (types/->MalDatum :symbol 'slurp)
-          ;; TODO: handle error from multiple args
-          ;; TODO: handle arity for all the special forms!
-          (core/mal-slurp (EVAL (first args) env))
+           ;; read-string
+           (types/->MalDatum :symbol 'read-string)
+           (core/mal-read-string (EVAL (first args) env))
 
-          ;; type
-          (types/->MalDatum :symbol 'type)
-          (let [[x & _error-handling-someday] args]
-            (types/->MalDatum :type
-                              (name (:typ (EVAL x env)))))
+           ;; slurp
+           (types/->MalDatum :symbol 'slurp)
+           ;; TODO: handle error from multiple args
+           ;; TODO: handle arity for all the special forms!
+           (core/mal-slurp (EVAL (first args) env))
 
-          (types/mal-datum :symbol 'quote)
-          (first args)
+           ;; type
+           (types/->MalDatum :symbol 'type)
+           (let [[x & _error-handling-someday] args]
+             (types/->MalDatum :type
+                               (name (:typ (EVAL x env)))))
 
-          (types/mal-datum :symbol 'quasiquoteexpand)
-          (quasiquote (first args))
+           (types/mal-datum :symbol 'quote)
+           (first args)
 
-          (types/mal-datum :symbol 'vec)
-          (let [[arg & _too-many-args?] args
-                arg (EVAL arg env)
-                {:keys [typ datum-val]} arg]
-            (if-not (#{:list :vector} typ)
-              (throw (ex-info "argument to vec must be a list or a vector"
-                              {:cause :vec-argument-must-be-list-or-vector
-                               :arg arg}))
-              (types/mal-datum :vector datum-val)))
+           (types/mal-datum :symbol 'quasiquoteexpand)
+           (quasiquote (first args))
 
-          (types/mal-datum :symbol 'quasiquote)
-          (recur (quasiquote (first args)) env)
+           (types/mal-datum :symbol 'vec)
+           (let [[arg & _too-many-args?] args
+                 arg (EVAL arg env)
+                 {:keys [typ datum-val]} arg]
+             (if-not (#{:list :vector} typ)
+               (throw (ex-info "argument to vec must be a list or a vector"
+                               {:cause :vec-argument-must-be-list-or-vector
+                                :arg arg}))
+               (types/mal-datum :vector datum-val)))
 
-          ;; assume it's a function of some kind
-          (let [[f & args] (:datum-val (eval-ast x env))]
-            ;; don't print env here, dork. it's got recursive structure in it.
-            (condp = (:typ f)
-              :host-fn (apply (:datum-val f) args)
-              :fn* (let [{:keys [ast binds f-env]} (:datum-val f)
-                         e2 (env/mal-environer f-env (:datum-val binds) args)]
-                     (recur ast e2))
-              (throw (ex-info (format "Unknown type of function: %s" (:typ f))
-                              {:cause :unknown-type-of-function
-                               :f f
-                               :args args})))))))))
+           (types/mal-datum :symbol 'quasiquote)
+           (recur (quasiquote (first args)) env true)
+
+           ;; assume it's a function of some kind
+           (let [[f & args] (:datum-val (eval-ast x env))]
+             ;; don't print env here, dork. it's got recursive structure in it.
+             (condp = (:typ f)
+               :host-fn (apply (:datum-val f) args)
+               :fn* (let [{:keys [ast binds f-env]} (:datum-val f)
+                          e2 (env/mal-environer f-env (:datum-val binds) args)]
+                      (recur ast e2 true))
+               (throw (ex-info (format "Unknown type of function: %s" (:typ f))
+                               {:cause :unknown-type-of-function
+                                :f f
+                                :args args}))))))))))
 
 (defn eval-ast
   "ast and return value are always MalDatum"

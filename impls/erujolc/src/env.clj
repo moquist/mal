@@ -11,7 +11,7 @@
   (-find [this k]
     "Recursively search this env and then its parents for k. Return the env containing k.")
   (-get [this k]
-    "Using -find, look up k in this env or a parent and return the matching v."))
+    "Using -find, look up k in this env or a parent and return the matching v. Throws clojure.lang.ExceptionInfo if k is not found."))
 
 (defn set [this k v]
   (-set this k v)
@@ -29,6 +29,14 @@
 
 (defn get [this k]
   (-get this k))
+
+(defn get-safe
+  "Like get, but returns ::not-found on failed lookup."
+  [this k]
+  (try
+    (get this k)
+    (catch clojure.lang.ExceptionInfo _
+      ::not-found)))
 
 (defrecord MalEnvironer [outer data]
   MalEnviron
