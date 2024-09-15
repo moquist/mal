@@ -88,18 +88,14 @@
 (declare EVAL)
 (defn mal-macroexpand [ast env]
   ;; N.B.: env is mutable, no need to bind it in the loop.
-  #_
   (prn :moquist-mal-macroexpand1 ast)
   (loop [ast ast]
-    #_
     (prn :moquist-mal-macroexpand2 ast)
     (if (ast->maybe-macro-call ast env)
       (do
-        #_
         (prn :moquist-mal-macroexpand3 ast :true-wut? (ast->maybe-macro-call ast env))
         (recur (EVAL ast env false)))
       (do
-        #_
         (prn :moquist-mal-macroexpand4 ast)
         ast))))
 
@@ -111,15 +107,14 @@
   ([x env]
    (EVAL x env true))
   ([x env macroexpand-moquist?]
-   #_
    (prn :moquist-x1 x)
    (let [x (if-not macroexpand-moquist?
              x
              (do
-               #_
                (prn :moquist-macroexpand-moquist? x)
-               (mal-macroexpand x env)))]
-     #_
+               (let [y (mal-macroexpand x env)]
+                 (prn :moquist-macroexpand-y y)
+                 y)))]
      (prn :moquist-x2 x)
      (cond
        (-> x :typ (not= :list))
@@ -307,6 +302,7 @@
 (defn eval-ast
   "ast and return value are always MalDatum"
   [ast env]
+  (prn :moquist-eval-ast ast)
   (condp = (:typ ast)
     :symbol (or
               (env/get env ast)
