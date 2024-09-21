@@ -1,5 +1,6 @@
 {:paths ["src"]
- :deps {org.clojure/clojure {:mvn/version "1.11.1"}}
+ :deps {org.clojure/clojure {:mvn/version "1.11.1"}
+        nubank/matcher-combinators {:mvn/version "3.9.1"}}
  :aliases {:step0 {:main-opts ["-m" step0-repl]}
            :step1 {:main-opts ["-m" step1-read-print]}
            :step2 {:main-opts ["-m" step2-eval]}
@@ -14,5 +15,6 @@
                       :extra-deps {jonase/eastwood {:mvn/version "RELEASE"}}}
            :cider-nrepl {:extra-deps {cider/cider-nrepl {:mvn/version "0.26.0"}}}
            :kaocha {:extra-deps
-                    {lambdaisland/kaocha {:mvn/version "1.71.1119"}, org.slf4j/slf4j-nop {:mvn/version "2.0.4"}},
+                    {lambdaisland/kaocha {:mvn/version "1.71.1119"},
+                     org.slf4j/slf4j-nop {:mvn/version "2.0.4"}},
                     :main-opts ["-m" "kaocha.runner" "--config-file" ".kaocha/tests.edn"]}}}
