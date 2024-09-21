@@ -63,6 +63,7 @@
         (@data k)
         (throw (ex-info (format "%s not found, total bummer" (:datum-val k))
                         {:cause :ns-resolve-failed
+                         :key k
                          ;; dont' print 'this, it's recursive... blows up!
                          :env this})))))
   #_#_
