@@ -1,6 +1,7 @@
 (ns step8-macros-test
   (:require [clojure.test :refer [testing deftest is]]
             [core]
+            [matcher-combinators.test]
             [types]
             [step8-macros :as step8]))
 
@@ -40,4 +41,29 @@
   (let [[ast env] (read-one-form "(+ 1 2)")]
     (is (not (step8/ast->maybe-macro-call ast env)))))
 
+(deftest mal-macroexpand-test
+  (let [[result env] (read-eval-one-form
+                       "(defmacro! unless (fn* (pred a b) (quasiquote (if ~pred ~b ~a))))")]
 
+    (testing "basic macroexpand"
+      (let [[result2 env] (read-eval-one-form "(macroexpand (unless PRED :A :B))" env)]
+        (is (= #types.MalDatum{:typ :list,
+                               :datum-val [#types.MalDatum{:typ :symbol, :datum-val if}
+                                           #types.MalDatum{:typ :symbol, :datum-val PRED}
+                                           #types.MalDatum{:typ :keyword, :datum-val :B}
+                                           #types.MalDatum{:typ :keyword, :datum-val :A}]}
+               result2))))
+
+    (testing "basic macro"
+      (let [e (ex-data (try (read-eval-one-form "(unless PRED :A :B)" env)
+                            (catch clojure.lang.ExceptionInfo e
+                              e)))]
+        (is (match? {:cause :ns-resolve-failed
+                     :key (types/mal-datum :symbol 'PRED)}
+                    e))))
+
+    (testing "basic macro"
+      (let [[_ env] (read-eval-one-form "(def! PRED false)" env)
+            [result3 env] (read-eval-one-form "(unless PRED :A :B)" env)]
+        (is (= (types/mal-datum :keyword :A)
+               result3))))))
