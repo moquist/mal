@@ -117,8 +117,8 @@
         (is (= (step7/eval-ast mal-data env)
                (assoc-in mal-data [:datum-val 0] mal-hostfn-+))))
       (testing "EVAL calls the fn"
-        (is (= (step7/EVAL mal-data env)
-               (types/mal-datum :undetermined 3))))))
+        (is (= (types/mal-datum :int 3)
+               (step7/EVAL mal-data env))))))
 
   (testing "nested fn-call"
     (let [env (step7/gen-env core/built-in-env)
@@ -139,10 +139,10 @@
         (is (= (step7/eval-ast mal-data env)
                (-> mal-data
                    (assoc-in [:datum-val 0] mal-hostfn-+)
-                   (assoc-in [:datum-val 3] (types/mal-datum :undetermined 12))))))
+                   (assoc-in [:datum-val 3] (types/mal-datum :int 12))))))
       (testing "EVAL evals the top-level form"
         (is (= (step7/EVAL mal-data env)
-               (types/mal-datum :undetermined 15))))))
+               (types/mal-datum :int 15))))))
   )
 
 

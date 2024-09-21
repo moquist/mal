@@ -5,15 +5,31 @@
             reader
             types))
 
+(defn malify-val [x]
+  (if (satisfies? printer/MalPrinter x)
+    x
+    (let [typ (cond
+                (nil? x) :nil
+                (instance? clojure.lang.Atom x) :atom
+                (seq? x) :list
+                (vector? x) :vector
+                (boolean? x) :bool
+                (string? x) :string
+                (keyword? x) :keyword
+                (map? x) :map
+                (fn? x) :host-fn
+                (int? x) :int
+                :else :undetermined)]
+      (types/->MalDatum typ x))))
+
 (defn malify-fn [f]
   (fn [& args]
-    (types/->MalDatum :undetermined
-                      (apply f (map :datum-val args)))))
+    (malify-val (apply f (map :datum-val args)))))
 
-(defn malify-fn2 [f]
+(defn malify-fn-might-throw [f]
   (fn [& args]
     (try
-      (apply f (map :datum-val args))
+      (malify-val (apply f (map :datum-val args)))
       (catch Exception e
         (throw (ex-info (format "Caught exception: %s" e)
                         {:cause :host-lang-exception
@@ -98,8 +114,8 @@
    ['read-string mal-read-string]
    ['list mal-list] ;; this is why (list ...) works. I keep forgetting.
    ['list? mal-list?]
-   ['nth (malify-fn2 clojure.core/nth)]
-   ['first (malify-fn2 clojure.core/first)]
+   ['nth (malify-fn-might-throw clojure.core/nth)]
+   ['first (malify-fn clojure.core/first)]
    ['rest (malify-fn clojure.core/rest)]
    ['empty? mal-empty?]
    ['count mal-count]

@@ -9,10 +9,10 @@
         [_reader form2] (step6/READ "(eval (list + 2 3))")
         ]
     (step6/rep "(def! mal-prog (list + 1 2))" env)
-    (is (= (step6/EVAL form env)
-           (types/->MalDatum :undetermined 3)))
-    (is (= (step6/EVAL form2 env)
-           (types/->MalDatum :undetermined 5))))
+    (is (= (types/->MalDatum :int 3)
+           (step6/EVAL form env)))
+    (is (= (types/->MalDatum :int 5)
+           (step6/EVAL form2 env))))
   (testing "eval doesn't use local env"
     (let [env (step6/gen-env core/built-in-env)
           [_reader form] (step6/READ "(let* (a 1)
@@ -41,15 +41,15 @@
                                        (types/mal-datum :symbol 'mef)])
                env)
              (types/mal-datum :int 7))))
-    (is (= (step6/EVAL
+    (is (= (types/mal-datum :int 8)
+           (step6/EVAL
              (types/mal-datum :list [(types/mal-datum :symbol 'swap!)
                                      (types/mal-datum :symbol 'mef)
                                      (types/mal-datum :symbol 'inc)])
-             env)
-           (types/mal-datum :undetermined 8)))
+             env)))
     (testing "atom state has changed"
-      (is (= (step6/EVAL
+      (is (= (types/mal-datum :int 8)
+            (step6/EVAL
                (types/mal-datum :list [(types/mal-datum :symbol 'deref)
                                        (types/mal-datum :symbol 'mef)])
-               env)
-             (types/mal-datum :undetermined 8))))))
+               env))))))

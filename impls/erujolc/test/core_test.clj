@@ -4,11 +4,29 @@
             core
             types))
 
+(deftest malify-val-test
+  (let [cases [{:result :nil :input nil}
+               {:result :atom :input (atom 7)}
+               {:result :list :input '()}
+               {:result :list :input (list)}
+               {:result :list :input (lazy-seq [])}
+               {:result :vector :input []}
+               {:result :bool :input false}
+               {:result :string :input "yeep"}
+               {:result :keyword :input :yeep}
+               {:result :map :input {}}
+               {:result :host-fn :input +}
+               {:result :int :input 7}
+               {:result :undetermined :input 7.1}
+               ]]
+    (doseq [{:keys [result input]} cases]
+      (is (= result (:typ (core/malify-val input)))))))
+
 (deftest malify-fn-test
   (is (= ((core/malify-fn +)
           (types/->MalDatum :int 3)
           (types/->MalDatum :int 4))
-         (types/->MalDatum :undetermined 7))))
+         (types/->MalDatum :int 7))))
 
 (deftest mal-prn-test
   (let [stdout (with-out-str

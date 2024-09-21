@@ -14,10 +14,10 @@
              acc
              (sum2 (- n 1) (+ n acc)))))"
       env)
-    (is (= (step5/EVAL form env)
-           (types/->MalDatum :undetermined 55)))
-    (is (= (step5/EVAL form2 env)
-           (types/->MalDatum :undetermined 50005000)))))
+    (is (= (types/->MalDatum :int 55)
+           (step5/EVAL form env)))
+    (is (= (types/->MalDatum :int 50005000)
+           (step5/EVAL form2 env)))))
 
 
 (deftest mutual-recursion-test
