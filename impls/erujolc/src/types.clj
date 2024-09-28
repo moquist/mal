@@ -28,7 +28,7 @@
     (prn ::MalDatum-MalPrinter :typ typ :datum-val datum-val)
     (condp = typ
       :host-fn "#<host-function>"
-      :exception (str "ERROR (Exception):" (printer/mal-print-string datum-val print-readably))
+      :exception (str "ERROR (Exception): " (printer/mal-print-string datum-val print-readably))
       :atom (str "(atom "
                  (printer/mal-print-string
                    (-> this :meta-datum :mal-atoms deref (get datum-val))
