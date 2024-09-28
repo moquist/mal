@@ -110,7 +110,6 @@
                {:macro-f datum-val
                 :macro-args args}))))))
 
-(declare EVAL)
 (defn mal-macroexpand [ast env]
   ;; N.B.: env is mutable, no need to bind it in the loop.
   (loop [ast ast]
