@@ -3,6 +3,7 @@
             [clojure.pprint]
             core
             env
+            exceptions
             printer
             reader
             types
@@ -36,36 +37,6 @@
   ;; could just use clojure atoms, but seems interesting to have a slightly different model
   "map from atom-id to value"
   (atom {}))
-
-(def mal-exception-state-default
-  {:exceptions []
-   :thrown? false})
-
-(def mal-exception-state
-  ;; could just use Clojure exceptions, but will learn more by implementing without
-  (atom mal-exception-state-default))
-
-(defn mal-exception-thrown? []
-  (:thrown? @mal-exception-state))
-
-(defn mal-exception-get []
-  (-> mal-exception-state
-      deref
-      :exceptions
-      last
-      (or (throw (ex-info "Attempting to get mal exception when there is none thrown" {})))))
-
-(defn mal-exception-reset! []
-  (reset! mal-exception-state mal-exception-state-default))
-
-(defn throw-mal-exception [msg]
-  (swap! mal-exception-state
-         (fn [a]
-           (-> a
-               (assoc :thrown? true)
-               (update :exceptions
-                       conj
-                       (types/mal-datum :exception msg))))))
 
 (declare quasiquote)
 (defn quasiquote-helper [{:keys [typ datum-val] :as ast}]
@@ -134,7 +105,7 @@
   ([x env]
    (EVAL x env true))
   ([x env macroexpand-moquist?]
-   (if (mal-exception-thrown?)
+   (if (exceptions/mal-exception-thrown?)
      ::mal-exception-thrown
      (let [x (if-not macroexpand-moquist?
                x
@@ -160,17 +131,17 @@
              ;; throw
              (types/mal-datum :symbol 'throw)
              (let [[e & _err] args]
-               (throw-mal-exception e))
+               (exceptions/throw-mal-exception! e))
 
              ;; try*/catch*
              (types/mal-datum :symbol 'try*)
              (let [[form & [catch-block]] args
                    tried (EVAL form env)]
-               (if-not (mal-exception-thrown?)
+               (if-not (exceptions/mal-exception-thrown?)
                  tried
                  (let [[_catch* exception-symbol exception-form] (:datum-val catch-block)
-                       e2 (env/mal-environer env [exception-symbol] [(mal-exception-get)])]
-                   (mal-exception-reset!)
+                       e2 (env/mal-environer env [exception-symbol] [(exceptions/mal-exception-get)])]
+                   (exceptions/mal-exception-reset!)
                    (recur exception-form e2 true))))
 
              ;; cons
@@ -372,9 +343,9 @@
   #_
   (clojure.pprint/pprint {:moquist :PRINT :form form})
   (cond
-    (mal-exception-thrown?)
-    (let [x (mal-exception-get)]
-      (mal-exception-reset!)
+    (exceptions/mal-exception-thrown?)
+    (let [x (exceptions/mal-exception-get)]
+      (exceptions/mal-exception-reset!)
       (printer/mal-print-string x true))
 
     (satisfies? printer/MalPrinter form)
