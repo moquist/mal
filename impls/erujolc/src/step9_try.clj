@@ -144,6 +144,13 @@
                    (exceptions/mal-exception-reset!)
                    (recur exception-form e2 true))))
 
+             ;; exception
+             (types/mal-datum :symbol 'exception)
+             (let [evaluated-ast (eval-ast args env)]
+               (when-not (exceptions/mal-exception-thrown?)
+                 (let [[e & _err] evaluated-ast]
+                   (types/mal-datum :exception e))))
+
              ;; cons
              (types/mal-datum :symbol 'cons)
              (let [[x lst] (map #(EVAL % env) args)]
