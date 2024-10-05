@@ -1,6 +1,7 @@
 (ns core
   (:require [clojure.string :as str]
             [clojure.walk :as walk]
+            exceptions
             printer
             reader
             types))
@@ -31,9 +32,8 @@
     (try
       (malify-val (apply f (map :datum-val args)))
       (catch Exception e
-        (throw (ex-info (format "Caught exception: %s" e)
-                        {:cause :host-lang-exception
-                         :value e}))))))
+        (exceptions/throw-mal-exception! (types/mal-datum :string (or (.getMessage e)
+                                                                      (str (type e)))))))))
 
 (defn mal-prn [& xs]
   (println (str/join " " (mapv #(printer/mal-print-string % true) xs)))
