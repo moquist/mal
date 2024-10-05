@@ -59,13 +59,8 @@
       :else nil))
   (-get [this k]
     (let [{data :data} (-find this k)]
-      (if (and data (contains? @data k))
-        (@data k)
-        (throw (ex-info (format "%s not found, total bummer" (:datum-val k))
-                        {:cause :ns-resolve-failed
-                         :key k
-                         ;; dont' print 'this, it's recursive... blows up!
-                         :env this})))))
+      (when (and data (contains? @data k))
+        (@data k))))
   #_#_
   Object
   (toString [this]

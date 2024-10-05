@@ -176,18 +176,20 @@
 
              ;; swap!
              (types/mal-datum :symbol 'swap!)
-             (let [[a f & f-args] (:datum-val (eval-ast (types/mal-datum :list args) env))
-                   atom-id (:datum-val a)
-                   atom-val (-> mal-atoms deref (get atom-id))
-                   new-val (EVAL
-                             (types/mal-datum
-                               :list
-                               (into
-                                 [f atom-val]
-                                 f-args))
-                             env)]
-               (swap! mal-atoms assoc atom-id new-val)
-               new-val)
+             (let [ast-evaluated (eval-ast (types/mal-datum :list args) env)]
+               (when-not (exceptions/mal-exception-thrown?)
+                 (let [[a f & f-args] (:datum-val ast-evaluated)
+                       atom-id (:datum-val a)
+                       atom-val (-> mal-atoms deref (get atom-id))
+                       new-val (EVAL
+                                 (types/mal-datum
+                                   :list
+                                   (into
+                                     [f atom-val]
+                                     f-args))
+                                 env)]
+                   (swap! mal-atoms assoc atom-id new-val)
+                   new-val)))
 
              ;; env-keys
              (types/mal-datum :symbol 'env-keys)
@@ -295,17 +297,19 @@
              (recur (quasiquote (first args)) env true)
 
              ;; assume it's a function of some kind
-             (let [[f & args] (:datum-val (eval-ast x env))]
-               ;; don't print env here, dork. it's got recursive structure in it.
-               (condp = (:typ f)
-                 :host-fn (apply (:datum-val f) args)
-                 :fn* (let [{:keys [ast binds f-env]} (:datum-val f)
-                            e2 (env/mal-environer f-env (:datum-val binds) args)]
-                        (recur ast e2 true))
-                 (throw (ex-info (format "Unknown type of function: %s" (:typ f))
-                                 {:cause :unknown-type-of-function
-                                  :f f
-                                  :args args})))))))))))
+             (let [ast-evaluated (eval-ast x env)]
+               (when-not (exceptions/mal-exception-thrown?)
+                 (let [[f & args] (:datum-val ast-evaluated)]
+                   ;; don't print env here, dork. it's got recursive structure in it.
+                   (condp = (:typ f)
+                     :host-fn (apply (:datum-val f) args)
+                     :fn* (let [{:keys [ast binds f-env]} (:datum-val f)
+                                e2 (env/mal-environer f-env (:datum-val binds) args)]
+                            (recur ast e2 true))
+                     (throw (ex-info (format "Unknown type of function: %s" (:typ f))
+                                     {:cause :unknown-type-of-function
+                                      :f f
+                                      :args args})))))))))))))
 
 (defn eval-ast
   "ast and return value are always MalDatum"
@@ -313,12 +317,7 @@
   (condp = (:typ ast)
     :symbol (or
               (env/get env ast)
-              (throw (ex-info (format "Unable to resolve symbol: %s in this context"
-                                      (:datum-val ast))
-                              {:cause :undefined-symbol
-                               ;; #_#_ ;; recursive, blows up!
-                               :env env
-                               :symbol ast})))
+              (exceptions/throw-mal-exception! (types/mal-datum :string (format "'%s' not found" (:datum-val ast)))))
     :list (->> ast :datum-val (mapv #(EVAL % env)) (types/->MalDatum :list))
     :vector (->> ast :datum-val (mapv #(EVAL % env)) (types/->MalDatum :vector))
     :map (->> ast
