@@ -303,6 +303,16 @@
              (types/mal-datum :symbol 'quasiquote)
              (recur (quasiquote (first args)) env true)
 
+             ;; apply
+             (types/mal-datum :symbol 'apply)
+             (let [ast-evaluated (eval-ast (types/mal-datum :list args) env)]
+               (when-not (exceptions/mal-exception-thrown?)
+                 (let [ast (:datum-val ast-evaluated)
+                       f-and-args (into (vec (butlast ast)) (:datum-val (last ast)))]
+                   (recur (types/mal-datum :list f-and-args)
+                          env
+                          false))))
+
              ;; assume it's a function of some kind
              (let [ast-evaluated (eval-ast x env)]
                (when-not (exceptions/mal-exception-thrown?)
