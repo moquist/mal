@@ -305,13 +305,13 @@
 
              ;; map
              (types/mal-datum :symbol 'map)
-             (let [ast-evaluated (eval-ast (types/mal-datum :list args) env)]
+             (let [[f coll] args ; do not eval-ast f
+                   evaluated-coll (EVAL coll env)]
                (when-not (exceptions/mal-exception-thrown?)
-                 (let [[f & [coll]] (:datum-val ast-evaluated)
-                       results (mapv #(EVAL
+                 (let [results (mapv #(EVAL
                                        (types/mal-datum :list [f %])
                                        env)
-                                     (:datum-val coll))]
+                                     (:datum-val evaluated-coll))]
                    (types/mal-datum :list results))))
 
              ;; apply
