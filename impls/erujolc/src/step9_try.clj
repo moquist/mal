@@ -423,6 +423,10 @@
        env)
   (rep "(def! inc (fn* (a) (+ a 1)))" env)
   (rep "(def! dec (fn* (a) (- a 1)))" env)
+  (rep "(def! nil? (fn* (a) (= a nil)))" env)
+  (rep "(def! symbol? (fn* (a) (= (type a) \"symbol\")))" env)
+  (rep "(def! true? (fn* (a) (= a true)))" env)
+  (rep "(def! false? (fn* (a) (= a false)))" env)
   )
 
 (defn -main
