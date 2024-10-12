@@ -303,6 +303,17 @@
              (types/mal-datum :symbol 'quasiquote)
              (recur (quasiquote (first args)) env true)
 
+             ;; map
+             (types/mal-datum :symbol 'map)
+             (let [ast-evaluated (eval-ast (types/mal-datum :list args) env)]
+               (when-not (exceptions/mal-exception-thrown?)
+                 (let [[f & [coll]] (:datum-val ast-evaluated)
+                       results (mapv #(EVAL
+                                       (types/mal-datum :list [f %])
+                                       env)
+                                     (:datum-val coll))]
+                   (types/mal-datum :list results))))
+
              ;; apply
              (types/mal-datum :symbol 'apply)
              (let [ast-evaluated (eval-ast (types/mal-datum :list args) env)]
