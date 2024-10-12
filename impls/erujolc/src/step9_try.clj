@@ -352,6 +352,7 @@
     (exceptions/mal-exception-thrown?)
     (let [x (exceptions/mal-exception-get)]
       (exceptions/mal-exception-reset!)
+      (print "Exception: ")
       (printer/mal-print-string x true))
 
     (satisfies? printer/MalPrinter form)
