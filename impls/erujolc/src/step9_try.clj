@@ -105,6 +105,8 @@
   ([x env]
    (EVAL x env true))
   ([x env macroexpand-moquist?]
+   #_
+   (prn :moquist-x x)
    (if (exceptions/mal-exception-thrown?)
      ::mal-exception-thrown
      (let [x (if-not macroexpand-moquist?
@@ -130,6 +132,7 @@
 
              ;; throw
              (types/mal-datum :symbol 'throw)
+             ;; TODO: eval-ast here? Then might have exception-thrown-while-throwing-exception
              (let [[e & _err] args]
                (exceptions/throw-mal-exception! e))
 
@@ -316,10 +319,52 @@
 
              ;; apply
              (types/mal-datum :symbol 'apply)
-             (let [ast-evaluated (eval-ast (types/mal-datum :list args) env)]
+             (let [applied-coll (last args)
+                   applied-coll-evaluated (EVAL applied-coll env)]
+               (prn :moquist-applied-coll-evaluated applied-coll-evaluated)
+               (when-not (exceptions/mal-exception-thrown?)
+                 (let [f-and-args (into (vec (butlast args)) applied-coll-evaluated)]
+                   (recur (types/mal-datum :list f-and-args)
+                          env
+                          false))))
+             #_
+             (let [applied-coll (last args)
+                   applied-coll-evaluated (eval-ast applied-coll env)]
+               (prn :moquist-applied-coll-evaluated applied-coll-evaluated)
+               (when-not (exceptions/mal-exception-thrown?)
+                 (let [f-and-args (into (vec (butlast args)) applied-coll-evaluated)]
+                   (recur (types/mal-datum :list f-and-args)
+                          env
+                          false))))
+             #_
+             (let [ast-evaluated (EVAL (types/mal-datum :list args) env)]
+               #_
+               (prn :moquist-apply-ast-evaluated ast-evaluated)
                (when-not (exceptions/mal-exception-thrown?)
                  (let [ast (:datum-val ast-evaluated)
+                       #_#_
+                       _ (prn :moquist-apply-ast ast)
                        f-and-args (into (vec (butlast ast)) (:datum-val (last ast)))]
+                   (recur (types/mal-datum :list f-and-args)
+                          env
+                          false))))
+             #_
+             (let [f-and-args (into (vec (butlast args)) (:datum-val (last args)))]
+               (prn :moquist-args args)
+               (recur (types/mal-datum :list f-and-args)
+                      env
+                      false))
+             #_
+             (let [ast-evaluated (eval-ast (types/mal-datum :list args) env)]
+               #_
+               (prn :moquist-apply-ast-evaluated ast-evaluated)
+               (prn :moquist-1)
+               (when-not (exceptions/mal-exception-thrown?)
+                 (let [ast (:datum-val ast-evaluated)
+                       #_#_
+                       _ (prn :moquist-apply-ast ast)
+                       f-and-args (into (vec (butlast ast)) (:datum-val (last ast)))]
+                   (prn :moquist-2 (:datum-val (last ast)))
                    (recur (types/mal-datum :list f-and-args)
                           env
                           false))))
