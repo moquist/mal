@@ -323,11 +323,18 @@
              (types/mal-datum :symbol 'apply)
              (let [ast-evaluated (eval-ast (types/mal-datum :list args) env)]
                (when-not (exceptions/mal-exception-thrown?)
-                 (let [ast (:datum-val ast-evaluated)
-                       f-and-args (into (vec (butlast ast)) (:datum-val (last ast)))]
-                   (recur (types/mal-datum :list f-and-args)
-                          env
-                          false))))
+                 (let [[f & ast] (:datum-val ast-evaluated) ; first is 'apply
+                       args (into (vec (butlast ast)) (:datum-val (last ast)))]
+                   ;; don't print env here, dork. it's got recursive structure in it.
+                   (condp = (:typ f)
+                     :host-fn (apply (:datum-val f) args)
+                     :fn* (let [{:keys [ast binds f-env]} (:datum-val f)
+                                e2 (env/mal-environer f-env (:datum-val binds) args)]
+                            (recur ast e2 true))
+                     (throw (ex-info (format "Unknown type of function: %s" (:typ f))
+                                     {:cause :unknown-type-of-function
+                                      :f f
+                                      :args args}))))))
 
              ;; assume it's a function of some kind
              (let [ast-evaluated (eval-ast x env)]
