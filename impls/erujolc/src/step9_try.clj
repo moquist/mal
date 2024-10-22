@@ -314,6 +314,11 @@
                                      (:datum-val evaluated-coll))]
                    (types/mal-datum :list results))))
 
+             ;; eval-ast debugging
+             (types/mal-datum :symbol 'eval-ast)
+             (do (prn (eval-ast (types/mal-datum :list args) env))
+                 (types/mal-datum :nil nil))
+
              ;; apply
              (types/mal-datum :symbol 'apply)
              (let [ast-evaluated (eval-ast (types/mal-datum :list args) env)]
