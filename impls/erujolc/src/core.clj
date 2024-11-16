@@ -103,6 +103,26 @@
                      args)]
       (types/->MalDatum :bool (apply f args2)))))
 
+(defn mal-symbol? [x]
+  (types/mal-datum :bool (= (:typ x) :symbol)))
+
+(defn mal-symbol [x]
+  (types/mal-datum :symbol (:datum-val x)))
+
+(defn mal-keyword [x]
+  (if (-> x :typ (= :keyword))
+    x
+    (types/mal-datum :keyword (str ":" (:datum-val x)))))
+
+(defn mal-vector [& xs]
+  (types/mal-datum :vector (vec xs)))
+
+(defn mal-hash-map [& kvs]
+  (types/mal-datum :map (apply hash-map kvs)))
+
+(defn mal-assoc [m & kvs]
+  (types/mal-datum :map (apply assoc (:datum-val m) kvs)))
+
 (def built-in-env
   "Each must take and return mal data"
   [['+ (malify-fn clojure.core/+)]
@@ -126,6 +146,12 @@
    ['> (mal-comp-fn >)]
    ['<= (mal-comp-fn <=)]
    ['>= (mal-comp-fn >=)]
+   ['symbol? mal-symbol?]
+   ['symbol mal-symbol]
+   ['keyword mal-keyword]
+   ['vector mal-vector]
+   ['hash-map mal-hash-map]
+   ['assoc mal-assoc]
    ])
 
 

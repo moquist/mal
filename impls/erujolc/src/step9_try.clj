@@ -408,47 +408,36 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; core env
 (defn mal-map [env f coll]
-  #_
-  (prn :moquist-mal-map :env-type (type env) :coll coll)
-  (let [ast-evaluated (eval-ast coll env)]
-    (when-not (exceptions/mal-exception-thrown?)
-      #_
-      (prn :moquist-mal-map-ast-evaluated ast-evaluated)
-      (let [results (mapv
-                      (fn [item]
-                        #_
-                        (prn :moquist-mal-map-item item)
-                        (condp = (:typ f)
-                          :host-fn ((:datum-val f) [item])
-                          :core-fn ((:datum-val f) env [item])
-                          :fn* (let [{:keys [ast binds f-env]} (:datum-val f)
-                                     e2 (env/mal-environer f-env (:datum-val binds) [item])]
-                                 (EVAL ast e2 true))
-                          (throw (ex-info (format "Unknown type of function mapped: %s" (:typ f))
-                                          {:cause :unknown-type-of-function-mapped
-                                           :f f
-                                           :item item}))))
-                      (:datum-val ast-evaluated))]
-        (types/mal-datum :list results)))))
+  (let [results (mapv
+                  (fn [item]
+                    #_
+                    (prn :moquist-mal-map-item item)
+                    (condp = (:typ f)
+                      :host-fn ((:datum-val f) [item])
+                      :core-fn ((:datum-val f) env [item])
+                      :fn* (let [{:keys [ast binds f-env]} (:datum-val f)
+                                 e2 (env/mal-environer f-env (:datum-val binds) [item])]
+                             (EVAL ast e2 true))
+                      (throw (ex-info (format "Unknown type of function mapped: %s" (:typ f))
+                                      {:cause :unknown-type-of-function-mapped
+                                       :f f
+                                       :item item}))))
+                  (:datum-val coll))]
+        (types/mal-datum :list results)))
 
 (defn mal-apply [env f & args]
-  (prn :moquist-mal-apply1-args args)
-  (let [ast-evaluated (eval-ast (types/mal-datum :list args) env)]
-    (prn :moquist-mal-apply-wat)
-    (when-not (exceptions/mal-exception-thrown?)
-      (prn :moquist-mal-apply-ast-evaluated ast-evaluated)
-      (let [[f & ast] (:datum-val ast-evaluated) ; first is 'apply
-            args (into (vec (butlast ast)) (:datum-val (last ast)))]
-        ;; don't print env here, dork. it's got recursive structure in it.
-        (condp = (:typ f)
-          :host-fn (apply (:datum-val f) args)
-          :fn* (let [{:keys [ast binds f-env]} (:datum-val f)
-                     e2 (env/mal-environer f-env (:datum-val binds) args)]
-                 (recur ast e2 true))
-          (throw (ex-info (format "Unknown type of function: %s" (:typ f))
-                          {:cause :unknown-type-of-function
-                           :f f
-                           :args args})))))))
+  (let [args (into (vec (butlast args)) (:datum-val (last args)))]
+    ;; don't print env here, dork. it's got recursive structure in it.
+    (condp = (:typ f)
+      :host-fn (apply (:datum-val f) args)
+      :core-fn (apply (:datum-val f) env args)
+      :fn* (let [{:keys [ast binds f-env]} (:datum-val f)
+                 e2 (env/mal-environer f-env (:datum-val binds) args)]
+             (EVAL ast e2 true))
+      (throw (ex-info (format "Unknown type of function applied: %s" (:typ f))
+                      {:cause :unknown-type-of-function
+                       :f f
+                       :args args})))))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -465,18 +454,22 @@
   (rep "(def! inc (fn* (a) (+ a 1)))" env)
   (rep "(def! dec (fn* (a) (- a 1)))" env)
   (rep "(def! nil? (fn* (a) (= a nil)))" env)
-  (rep "(def! symbol? (fn* (a) (= (type a) \"symbol\")))" env)
   (rep "(def! true? (fn* (a) (= a true)))" env)
   (rep "(def! false? (fn* (a) (= a false)))" env)
   (rep "(def! throw (fn* (e) (throw-mal-exception! e)))" env)
+  (rep "(def! keyword? (fn* (a) (= (type a) \"keyword\")))" env)
+  (rep "(def! vector? (fn* (a) (= (type a) \"vector\")))" env)
+  (rep "(def! map? (fn* (a) (= (type a) \"map\")))" env)
+  (rep "(def! sequential? (fn* (a) (if (= (type a) \"list\") true (if (= (type a) \"vector\") true false))))" env)
+
+  ;; :core-fn gets env as the first argument
+  ;; :host-fn doesn't get env at all
   (env/set env
            (types/mal-datum :symbol 'map)
            (types/mal-datum :core-fn mal-map))
   (env/set env
            (types/mal-datum :symbol 'apply)
-           (types/mal-datum :core-fn mal-apply))
-
-  )
+           (types/mal-datum :core-fn mal-apply)))
 
 (defn -main
   "Prompt for input, process the input with READ-EVAL-PRINT, and recur."
