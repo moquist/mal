@@ -25,6 +25,8 @@
 
 (defn malify-fn [f]
   (fn [& args]
+    #_
+    (prn :moquist-malify-fn :f f :args args)
     (malify-val (apply f (map :datum-val args)))))
 
 (defn malify-fn-might-throw [f]

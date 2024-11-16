@@ -15,6 +15,7 @@
     :map
     :nil
     :host-fn ; implemented in the host language, built-in
+    :core-fn ; implemented in the host language, built-in
     :fn* ; implemented in mal
     :int
     :type
@@ -28,6 +29,7 @@
     (prn ::MalDatum-MalPrinter :typ typ :datum-val datum-val)
     (condp = typ
       :host-fn "#<host-function>"
+      :core-fn "#<core-function>"
       :exception (printer/mal-print-string datum-val print-readably)
       :atom (str "(atom "
                  (printer/mal-print-string
