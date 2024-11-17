@@ -140,10 +140,17 @@
                    tried (EVAL form env)]
                (if-not (exceptions/mal-exception-thrown?)
                  tried
-                 (let [[_catch* exception-symbol exception-form] (:datum-val catch-block)
-                       e2 (env/mal-environer env [exception-symbol] [(exceptions/mal-exception-get)])]
-                   (exceptions/mal-exception-reset!)
-                   (recur exception-form e2 true))))
+                 (let [mal-e (exceptions/mal-exception-get)]
+                   (if-let [catch-block (:datum-val catch-block)]
+                     (let [[_catch* exception-symbol exception-form] catch-block
+                           e2 (env/mal-environer env [exception-symbol] [(exceptions/mal-exception-get)])]
+                       (exceptions/mal-exception-reset!)
+                       (recur exception-form e2 true))
+                     (do
+                       (exceptions/mal-exception-reset!)
+                       (throw (ex-info (format "uncaught exception: %s" (printer/mal-print-string mal-e false))
+                                       {:cause :uncaught-exception
+                                        :exception mal-e})))))))
 
              ;; exception
              (types/mal-datum :symbol 'exception)
@@ -385,7 +392,7 @@
       (when result (println result))
       (when (and reader (not= :reader/peeked-into-the-abyss (reader/mal-peek reader)))
         (recur (rep reader env))))
-    (catch clojure.lang.ExceptionInfo e
+    (catch Throwable e
       (binding [*out* *err*]
         (prn e)))))
 
