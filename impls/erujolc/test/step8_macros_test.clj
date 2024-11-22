@@ -54,13 +54,13 @@
                                            #types.MalDatum{:typ :keyword, :datum-val :A}]}
                result2))))
 
-    (testing "basic macro"
-      (let [e (ex-data (try (read-eval-one-form "(unless PRED :A :B)" env)
-                            (catch clojure.lang.ExceptionInfo e
-                              e)))]
-        (is (match? {:cause :ns-resolve-failed
-                     :key (types/mal-datum :symbol 'PRED)}
-                    e))))
+    (testing "basic macro with exception"
+      (let [e (-> (try (read-eval-one-form "(unless PRED :A :B)" env)
+                       (catch clojure.lang.ExceptionInfo e
+                         e))
+                  ex-data
+                  (select-keys [:cause :symbol]))]
+        (is (= e {:cause :undefined-symbol, :symbol (types/mal-datum :symbol 'PRED)}))))
 
     (testing "basic macro"
       (let [[_ env] (read-eval-one-form "(def! PRED false)" env)
