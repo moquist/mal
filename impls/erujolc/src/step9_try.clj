@@ -321,15 +321,8 @@
                (when-not (exceptions/mal-exception-thrown?)
                  (let [[f & args] (:datum-val ast-evaluated)]
                    ;; don't print env here, dork. it's got recursive structure in it.
-                   #_
-                   (prn :moquist-eval-apply-wat :typ-f (:typ f) :type-env (type env))
                    (condp = (:typ f)
-                     :host-fn (do
-                                #_
-                                (prn :moquist-eval-host-fn :fn f :args args)
-                                #_
-                                (prn :moquist-eval-host-fn-2 :ast-evaluated ast-evaluated)
-                                (apply (:datum-val f) args))
+                     :host-fn (apply (:datum-val f) args)
                      :core-fn (apply (:datum-val f) env args)
                      :fn* (let [{:keys [ast binds f-env]} (:datum-val f)
                                 e2 (env/mal-environer f-env (:datum-val binds) args)]
@@ -417,8 +410,6 @@
 (defn mal-map [env f coll]
   (let [results (mapv
                   (fn [item]
-                    #_
-                    (prn :moquist-mal-map-item item)
                     (condp = (:typ f)
                       :host-fn ((:datum-val f) [item])
                       :core-fn ((:datum-val f) env [item])
