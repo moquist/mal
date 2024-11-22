@@ -42,11 +42,11 @@
     (is (not (step8/ast->maybe-macro-call ast env)))))
 
 (deftest mal-macroexpand-test
-  (let [[result env] (read-eval-one-form
-                       "(defmacro! unless (fn* (pred a b) (quasiquote (if ~pred ~b ~a))))")]
+  (let [[_result env] (read-eval-one-form
+                        "(defmacro! unless (fn* (pred a b) (quasiquote (if ~pred ~b ~a))))")]
 
     (testing "basic macroexpand"
-      (let [[result2 env] (read-eval-one-form "(macroexpand (unless PRED :A :B))" env)]
+      (let [[result2 _env] (read-eval-one-form "(macroexpand (unless PRED :A :B))" env)]
         (is (= #types.MalDatum{:typ :list,
                                :datum-val [#types.MalDatum{:typ :symbol, :datum-val if}
                                            #types.MalDatum{:typ :symbol, :datum-val PRED}
