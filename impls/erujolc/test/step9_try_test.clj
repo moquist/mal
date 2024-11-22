@@ -7,6 +7,7 @@
 
 (defn read-one-form [x & [env]]
   (let [env (or env (step9/gen-env core/built-in-env))
+        _ (step9/extend-env env)
         [_reader form] (step9/READ x)]
     [form env]))
 
@@ -15,55 +16,45 @@
     [(step9/EVAL form env)
      env]))
 
-(deftest defmacro-test
-  (let [[result env] (read-eval-one-form "(def! monkey 1)")]
-    (is (= (-> env :data deref (get (types/mal-datum :symbol 'monkey)))
-          (types/mal-datum :int 1))))
-  (let [[result env] (read-eval-one-form "(def! monkey (fn* () 1))")]
-    (is (false? (-> env
-                    :data
-                    deref
-                    (get (types/mal-datum :symbol 'monkey))
-                    :datum-val
-                    :macro?))))
-  (let [[result env] (read-eval-one-form "(defmacro! monkey (fn* () 1))")]
-    (is (-> env
-            :data
-            deref
-            (get (types/mal-datum :symbol 'monkey))
-            :datum-val
-            :macro?))))
+(deftest try*-test
+  (let [result (-> (try (read-eval-one-form "(try* boof)")
+                        (catch clojure.lang.ExceptionInfo e
+                          e))
+                   ex-data
+                   )]
+    (is (= {:cause :uncaught-exception,
+            :exception (types/mal-datum :exception
+                                        (types/mal-datum :string "'boof' not found"))}
+           result))))
 
-(deftest ast->maybe-macro-call-test
-  (let [[_result env] (read-eval-one-form "(defmacro! monkey (fn* () 1))")
-        [ast env] (read-one-form "(monkey)" env)]
-    (is (step9/ast->maybe-macro-call ast env)))
-  (let [[ast env] (read-one-form "(+ 1 2)")]
-    (is (not (step9/ast->maybe-macro-call ast env)))))
+(deftest throw-test
+  (let [[result _env] (read-eval-one-form "(try* (throw \"yeep\") (catch x {:x x}))")]
+    (is (= (types/mal-datum :map
+                            {(types/mal-datum :keyword :x)
+                             (types/mal-datum :exception
+                                              (types/mal-datum :string "yeep"))})
+           result)))
 
-(deftest mal-macroexpand-test
-  (let [[result env] (read-eval-one-form
-                       "(defmacro! unless (fn* (pred a b) (quasiquote (if ~pred ~b ~a))))")]
+  (let [[result _env] (read-eval-one-form "(try* (map throw (list \"my err\")) (catch* exc exc))")]
+    (is (= (types/mal-datum :exception (types/mal-datum :string "my err"))
+           result))))
 
-    (testing "basic macroexpand"
-      (let [[result2 env] (read-eval-one-form "(macroexpand (unless PRED :A :B))" env)]
-        (is (= #types.MalDatum{:typ :list,
-                               :datum-val [#types.MalDatum{:typ :symbol, :datum-val if}
-                                           #types.MalDatum{:typ :symbol, :datum-val PRED}
-                                           #types.MalDatum{:typ :keyword, :datum-val :B}
-                                           #types.MalDatum{:typ :keyword, :datum-val :A}]}
-               result2))))
+(deftest apply-test
+  (let [[result _env] (read-eval-one-form "(apply symbol? (list (quote two)))")]
+    (is (= (types/mal-datum :bool true)
+           result)))
+  (let [[result _env] (read-eval-one-form "(apply + 4 [5 6 7])")]
+    (is (= (types/mal-datum :int 22)
+           result))))
 
-    (testing "basic macro"
-      (let [e (ex-data (try (read-eval-one-form "(unless PRED :A :B)" env)
-                            (catch clojure.lang.ExceptionInfo e
-                              e)))]
-        (is (match? {:cause :ns-resolve-failed
-                     :key (types/mal-datum :symbol 'PRED)}
-                    e))))
+(deftest map-test
+  (let [[result _env] (read-eval-one-form "(map (fn* (x) (symbol? x)) (list 1 (quote two) \"three\"))")]
+    (is (= (types/mal-datum :list
+                            [(types/mal-datum :bool false)
+                             (types/mal-datum :bool true)
+                             (types/mal-datum :bool false)])
+           result)))
 
-    (testing "basic macro"
-      (let [[_ env] (read-eval-one-form "(def! PRED false)" env)
-            [result3 env] (read-eval-one-form "(unless PRED :A :B)" env)]
-        (is (= (types/mal-datum :keyword :A)
-               result3))))))
+  (let [[result _env] (read-eval-one-form "(apply (fn* (& more) (list? more)) [1 2 3])")]
+    (is (= (types/mal-datum :bool true)
+           result))))
