@@ -140,6 +140,11 @@
 (defn mal-vals [m]
   (types/mal-datum :list (vec (vals (:datum-val m)))))
 
+(defn mal-read-line [prompt]
+  (print (printer/mal-print-string prompt false))
+  (flush)
+  (malify-val (read-line)))
+
 (def built-in-env
   "Each must take and return mal data"
   [['+ (malify-fn clojure.core/+)]
@@ -174,6 +179,7 @@
    ['contains? mal-contains?]
    ['keys mal-keys]
    ['vals mal-vals]
+   ['readline mal-read-line]
    ])
 
 
