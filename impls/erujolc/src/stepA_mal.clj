@@ -189,23 +189,6 @@
                (swap! mal-atoms assoc atom-id v)
                v)
 
-             ;; swap!
-             (types/mal-datum :symbol 'swap!)
-             (let [ast-evaluated (eval-ast (types/mal-datum :list args) env)]
-               (when-not (exceptions/mal-exception-thrown?)
-                 (let [[a f & f-args] (:datum-val ast-evaluated)
-                       atom-id (:datum-val a)
-                       atom-val (-> mal-atoms deref (get atom-id))
-                       new-val (EVAL
-                                 (types/mal-datum
-                                   :list
-                                   (into
-                                     [f atom-val]
-                                     f-args))
-                                 env)]
-                   (swap! mal-atoms assoc atom-id new-val)
-                   new-val)))
-
              ;; env-keys
              (types/mal-datum :symbol 'env-keys)
              (prn (->> env :data deref keys (map :datum-val)))
@@ -436,6 +419,36 @@
                       {:cause :unknown-type-of-function
                        :f f
                        :args args})))))
+
+(defn mal-swap! [env & args]
+  (prn :moquist-mal-swap! :args args)
+  (let [ast-evaluated (eval-ast (types/mal-datum :list args) env)]
+    (when-not (exceptions/mal-exception-thrown?)
+      (let [[a f & f-args] (:datum-val ast-evaluated)
+            atom-id (:datum-val a)
+            atom-val (-> mal-atoms deref (get atom-id))
+            _ (prn :moquist-mal-swap!2 :atom-val atom-val :f f :f-args f-args)
+            new-val #_(EVAL
+                      (types/mal-datum
+                        :list
+                        (into
+                          [f atom-val]
+                          f-args))
+                      env)
+            (condp = (:typ f)
+              :host-fn (apply (:datum-val f) atom-val f-args)
+              :core-fn (apply (:datum-val f) env atom-val f-args)
+              :fn* (let [{:keys [ast binds f-env]} (:datum-val f)
+                         e2 (env/mal-environer f-env (:datum-val binds) (into [atom-val] f-args))]
+                     (EVAL ast e2 true))
+              (throw (ex-info (format "Unknown type of function used in swap!: %s" (:typ f))
+                              {:cause :unknown-type-of-function
+                               :f f
+                               :args args})))]
+        (swap! mal-atoms assoc atom-id new-val)
+        new-val))))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -459,6 +472,15 @@
   (rep "(def! vector? (fn* (a) (= (type a) \"vector\")))" env)
   (rep "(def! map? (fn* (a) (= (type a) \"map\")))" env)
   (rep "(def! sequential? (fn* (a) (if (= (type a) \"list\") true (if (= (type a) \"vector\") true false))))" env)
+  (rep "(def! *host-language* \"erujolc\")" env)
+  (rep "(def! time-ms (fn* () (throw \"time-ms is undefined\")))" env)
+  (rep "(def! meta (fn* () (throw \"meta is undefined\")))" env)
+  (rep "(def! with-meta (fn* () (throw \"with-meta is undefined\")))" env)
+  (rep "(def! fn? (fn* () (throw \"fn? is undefined\")))" env)
+  (rep "(def! string? (fn* () (throw \"string? is undefined\")))" env)
+  (rep "(def! number? (fn* () (throw \"number? is undefined\")))" env)
+  (rep "(def! seq (fn* () (throw \"seq is undefined\")))" env)
+  (rep "(def! conj (fn* () (throw \"conj is undefined\")))" env)
 
   ;; :core-fn gets env as the first argument
   ;; :host-fn doesn't get env at all
@@ -467,7 +489,10 @@
            (types/mal-datum :core-fn mal-map))
   (env/set env
            (types/mal-datum :symbol 'apply)
-           (types/mal-datum :core-fn mal-apply)))
+           (types/mal-datum :core-fn mal-apply))
+  (env/set env
+           (types/mal-datum :symbol 'swap!)
+           (types/mal-datum :core-fn mal-swap!)))
 
 (defn -main
   "Prompt for input, process the input with READ-EVAL-PRINT, and recur."
@@ -484,7 +509,9 @@
       (rep (format "(load-file \"%s\")" (first args)) env)
 
       ;; repl
-      (loop []
-        (when-let [input (prompt)]
-          (LOOP input env)
-          (recur))))))
+      (do
+        (rep "(println (str \"Mal [\" *host-language* \"]\"))" env)
+        (loop []
+          (when-let [input (prompt)]
+            (LOOP input env)
+            (recur)))))))
