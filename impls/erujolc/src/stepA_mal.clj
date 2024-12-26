@@ -468,6 +468,15 @@
   (rep "(def! vector? (fn* (a) (= (type a) \"vector\")))" env)
   (rep "(def! map? (fn* (a) (= (type a) \"map\")))" env)
   (rep "(def! sequential? (fn* (a) (if (= (type a) \"list\") true (if (= (type a) \"vector\") true false))))" env)
+  (rep "(def! *host-language* \"erujolc\")" env)
+  (rep "(def! time-ms (fn* () (throw \"time-ms is undefined\")))" env)
+  (rep "(def! meta (fn* () (throw \"meta is undefined\")))" env)
+  (rep "(def! with-meta (fn* () (throw \"with-meta is undefined\")))" env)
+  (rep "(def! fn? (fn* () (throw \"fn? is undefined\")))" env)
+  (rep "(def! string? (fn* () (throw \"string? is undefined\")))" env)
+  (rep "(def! number? (fn* () (throw \"number? is undefined\")))" env)
+  (rep "(def! seq (fn* () (throw \"seq is undefined\")))" env)
+  (rep "(def! conj (fn* () (throw \"conj is undefined\")))" env)
 
   ;; :core-fn gets env as the first argument
   ;; :host-fn doesn't get env at all
@@ -496,7 +505,9 @@
       (rep (format "(load-file \"%s\")" (first args)) env)
 
       ;; repl
-      (loop []
-        (when-let [input (prompt)]
-          (LOOP input env)
-          (recur))))))
+      (do
+        (rep "(println (str \"Mal [\" *host-language* \"]\"))" env)
+        (loop []
+          (when-let [input (prompt)]
+            (LOOP input env)
+            (recur)))))))
