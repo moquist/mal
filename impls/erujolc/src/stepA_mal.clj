@@ -124,12 +124,14 @@
              ;; ALT: expose the exception state to the Mal programmer.
              (types/mal-datum :symbol 'throw-mal-exception!)
              (let [[e & _err] args]
+               (prn :moquist-erujolc-exception e)
                (exceptions/throw-mal-exception! (eval-ast e env)))
 
              ;; try*/catch*
              (types/mal-datum :symbol 'try*)
              (let [[form & [catch-block]] args
                    tried (EVAL form env)]
+               (prn :moquist-erujolc-exception2 :tried tried :thrown? (exceptions/mal-exception-thrown?))
                (if-not (exceptions/mal-exception-thrown?)
                  tried
                  (let [mal-e (exceptions/mal-exception-get 2)]
@@ -295,8 +297,10 @@
     (exceptions/mal-exception-thrown?)
     (let [x (exceptions/mal-exception-get 1)]
       (exceptions/mal-exception-reset!)
-      (print "Exception: ")
-      (printer/mal-print-string x true))
+      #_
+      (prn :moquist-exception x)
+      (binding [*out* *err*]
+        (println (str "erujolc Exception: " (printer/mal-print-string x true)))))
 
     (satisfies? printer/MalPrinter form)
     (printer/mal-print-string form true)))
@@ -311,7 +315,7 @@
   (try
     (loop [[reader result] (rep input env)]
       ;; TODO: stop printing here, that's dumb
-      (when result (println result))
+      (when result (println result) (flush))
       (when (and reader (not= :reader/peeked-into-the-abyss (reader/mal-peek reader)))
         (recur (rep reader env))))
     (catch Throwable e
