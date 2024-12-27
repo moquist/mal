@@ -47,8 +47,7 @@
                    [(printer/-mal-print-string k print-readably)
                     (printer/-mal-print-string v print-readably)]))
          (interpose " ")
-         (apply str))
-    )
+         (apply str)))
   (printer/-mal-print-list [_ print-readably]
     (->> datum-val
          (map #(printer/-mal-print-string % print-readably))
