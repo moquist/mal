@@ -33,6 +33,8 @@
       (env-set env (first binds) (EVAL (nth binds 1) env))
       (LET env (rest (rest binds)) form)))))
 
+(prn :moquist1)
+
 (def! EVAL (fn* [ast env]
   ;; (do (prn "EVAL" ast "/" (keys @env)) )
   (try*
@@ -72,20 +74,27 @@
         (swap! trace str "\n  in mal EVAL: " ast)
         (throw exc))))))
 
+
+(prn :moquist2)
+
 ;; print
 (def! PRINT pr-str)
 
+(prn :moquist3)
 ;; repl
 (def! repl-env (new-env))
 (def! rep (fn* [strng]
   (PRINT (EVAL (READ strng) repl-env))))
 
+(prn :moquist4)
 ;; core.mal: defined directly using mal
 (map (fn* [sym] (env-set repl-env sym (eval sym))) core_ns)
 
+(prn :moquist5)
 ;; core.mal: defined using the new language itself
 (rep "(def! not (fn* [a] (if a false true)))")
 
+(prn :moquist6)
 ;; repl loop
 (def! repl-loop (fn* [line]
   (if line
@@ -99,5 +108,6 @@
               (reset! trace "")))))
       (repl-loop (readline "mal-user> "))))))
 
+(prn :moquist7)
 ;; main
 (repl-loop "")
