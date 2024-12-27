@@ -295,7 +295,7 @@
              (recur (quasiquote (first args)) env true)
 
              ;; eval-ast debugging
-             (types/mal-datum :symbol 'eval-ast)
+             (types/mal-datum :symbol 'erujolc-eval-ast)
              (do (prn (eval-ast (types/mal-datum :list args) env))
                  (types/mal-datum :nil nil))
 
