@@ -25,8 +25,6 @@
 (defrecord MalDatum [typ datum-val]
   printer/MalPrinter
   (printer/-mal-print-string [this print-readably]
-    #_
-    (prn ::MalDatum-MalPrinter :typ typ :datum-val datum-val)
     (condp = typ
       :host-fn "#<host-function>"
       :core-fn "#<core-function>"
