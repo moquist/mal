@@ -366,8 +366,8 @@
     (exceptions/mal-exception-thrown?)
     (let [x (exceptions/mal-exception-get)]
       (exceptions/mal-exception-reset!)
-      (print "Exception: ")
-      (printer/mal-print-string x true))
+      (binding [*out* *err*]
+        (println (str "Exception: " (printer/mal-print-string x true)))))
 
     (satisfies? printer/MalPrinter form)
     (printer/mal-print-string form true)))
