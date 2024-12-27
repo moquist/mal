@@ -12,7 +12,9 @@
 (defn mal-exception-thrown? []
   (:thrown? @mal-exception-state))
 
-(defn mal-exception-get []
+(defn mal-exception-get [& [c]]
+  #_
+  (prn :moquist-mal-exception-get c)
   (-> mal-exception-state
       deref
       :exceptions

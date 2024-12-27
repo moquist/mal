@@ -247,6 +247,7 @@
           ;; don't print env here, dork. it's got recursive structure in it.
           (condp = (:typ f)
             :host-fn (apply (:datum-val f) args)
+            :core-fn (apply (:datum-val f) env args)
             :fn* (let [{:keys [ast binds f-env]} (:datum-val f)
                        e2 (env/mal-environer f-env (:datum-val binds) args)]
                    (recur ast e2))
@@ -326,12 +327,25 @@
   (flush)
   (some-> (read-line) str/trim))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; core env
+(defn mal-cons [env & args]
+  (let [[x lst] (map #(EVAL % env) args)]
+    ;; TODO: ensure lst is a :list
+    (types/mal-datum :list
+                     (into [x] (:datum-val lst)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defn extend-env
   "Add to the mutable env."
   [env]
   (rep "(def! not (fn* (a) (if a false true)))" env)
   (rep "(def! load-file (fn* (filepath) (eval (read-string (str \"(do \" (slurp filepath) \"\nnil)\")))))" env)
   (rep "(def! atom? (fn* (x) (= \"atom\" (type x))))" env)
+
+  (env/set env
+           (types/mal-datum :symbol 'cons)
+           (types/mal-datum :core-fn mal-cons))
   )
 
 (defn -main
