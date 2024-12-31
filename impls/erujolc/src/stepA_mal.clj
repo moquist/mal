@@ -390,8 +390,11 @@
     (printer/mal-print-string form true)))
 
 (defn rep [x env]
-  (let [[reader form] (READ x)]
-    [reader (-> form (EVAL env) PRINT)]))
+  (let [[reader form] (READ x)
+        evaluation-result (EVAL form env)
+        printed-result-str (when-not (= :reader/peeked-into-the-abyss evaluation-result)
+                             (PRINT evaluation-result))]
+    [reader printed-result-str]))
 
 (defn LOOP
   "Loop through the forms in the provided input"
