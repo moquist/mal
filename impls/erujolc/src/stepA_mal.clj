@@ -386,12 +386,20 @@
       (binding [*out* *err*]
         (println (str "erujolc Exception: " (printer/mal-print-string x true)))))
 
-    (satisfies? printer/MalPrinter form)
+    (not (instance? types.MalDatum form))
+    (throw (ex-info (format  "Non-MalDatum printing attempt: %s" form)
+                    {:form form
+                     :cause :attempted-to-print-non-maldatum}))
+
+    :else
     (printer/mal-print-string form true)))
 
 (defn rep [x env]
-  (let [[reader form] (READ x)]
-    [reader (-> form (EVAL env) PRINT)]))
+  (let [[reader form] (READ x)
+        evaluation-result (EVAL form env)
+        printed-result-str (when-not (= :reader/peeked-into-the-abyss evaluation-result)
+                             (PRINT evaluation-result))]
+    [reader printed-result-str]))
 
 (defn LOOP
   "Loop through the forms in the provided input"
@@ -490,7 +498,10 @@
                                 (vec (apply concat lists)))))
 
 (defn mal-read-string [env s]
-  (core/mal-read-string (EVAL s env)))
+  (try
+    (core/mal-read-string (EVAL s env))
+    (catch Throwable _t
+      (types/mal-datum :nil nil))))
 
 (defn mal-slurp [env path]
   (core/mal-slurp (EVAL path env)))
