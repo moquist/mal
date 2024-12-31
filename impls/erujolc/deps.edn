@@ -20,3 +20,4 @@
                     {lambdaisland/kaocha {:mvn/version "1.71.1119"},
                      org.slf4j/slf4j-nop {:mvn/version "2.0.4"}},
                     :main-opts ["-m" "kaocha.runner" "--config-file" ".kaocha/tests.edn"]}}}
+
