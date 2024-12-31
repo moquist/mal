@@ -493,7 +493,10 @@
                                 (vec (apply concat lists)))))
 
 (defn mal-read-string [env s]
-  (core/mal-read-string (EVAL s env)))
+  (try
+    (core/mal-read-string (EVAL s env))
+    (catch Throwable _t
+      (types/mal-datum :nil nil))))
 
 (defn mal-slurp [env path]
   (core/mal-slurp (EVAL path env)))
