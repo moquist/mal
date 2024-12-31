@@ -7,7 +7,7 @@
             types))
 
 (defn malify-val [x]
-  (if (satisfies? printer/MalPrinter x)
+  (if (instance? types.MalDatum x)
     x
     (let [typ (cond
                 (nil? x) :nil

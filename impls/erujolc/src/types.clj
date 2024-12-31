@@ -64,3 +64,9 @@
 (defmethod clojure.core/print-method ::fn* [x _]
   (prn (select-keys x [:ast :binds])))
 
+
+(extend-protocol printer/MalPrinter
+  Object
+  (printer/-mal-print-string [this print-readably]
+    (prn (Exception. "where did this come from?"))
+    (str "Erujolc bug: unprintable " this " of type " (type this))))

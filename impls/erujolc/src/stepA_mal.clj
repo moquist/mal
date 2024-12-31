@@ -386,7 +386,12 @@
       (binding [*out* *err*]
         (println (str "erujolc Exception: " (printer/mal-print-string x true)))))
 
-    (satisfies? printer/MalPrinter form)
+    (not (instance? types.MalDatum form))
+    (throw (ex-info (format  "Non-MalDatum printing attempt: %s" form)
+                    {:form form
+                     :cause :attempted-to-print-non-maldatum}))
+
+    :else
     (printer/mal-print-string form true)))
 
 (defn rep [x env]
