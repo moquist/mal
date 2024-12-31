@@ -120,30 +120,38 @@
          :else
          (let [[f & args] (:datum-val x)]
            (condp = f
+             ;; atom
+             #_#_
+             (types/->MalDatum :symbol 'atom)
+             (let [[v & _err] args
+                   atom-id (gensym)]
+               (swap! mal-atoms assoc atom-id (EVAL v env))
+               (-> (types/mal-datum :atom atom-id)
+                   (assoc :meta-datum {:mal-atoms mal-atoms})))
+
              ;; throw-mal-exception!
              ;; ALT: expose the exception state to the Mal programmer.
              (types/mal-datum :symbol 'throw-mal-exception!)
              (let [[e & _err] args]
-               (prn :moquist-erujolc-exception e)
                (exceptions/throw-mal-exception! (eval-ast e env)))
 
              ;; try*/catch*
              (types/mal-datum :symbol 'try*)
              (let [[form & [catch-block]] args
                    tried (EVAL form env)]
-               (prn :moquist-erujolc-exception2 :tried tried :thrown? (exceptions/mal-exception-thrown?))
                (if-not (exceptions/mal-exception-thrown?)
                  tried
-                 (let [mal-e (exceptions/mal-exception-get 2)]
+                 (let [mal-e (exceptions/mal-exception-get)]
                    (if-let [catch-block (:datum-val catch-block)]
                      (let [[_catch* exception-symbol exception-form] catch-block
-                           e2 (env/mal-environer env [exception-symbol] [(exceptions/mal-exception-get 3)])]
+                           e2 (env/mal-environer env [exception-symbol] [(exceptions/mal-exception-get)])]
                        (exceptions/mal-exception-reset!)
                        (recur exception-form e2 true))
                      (do
                        (exceptions/mal-exception-reset!)
                        (throw (ex-info (format "uncaught exception: %s" (printer/mal-print-string mal-e false))
                                        {:cause :uncaught-exception
+                                        :erujolc? true
                                         :exception mal-e})))))))
 
              ;; exception
@@ -153,9 +161,48 @@
                  (let [[e & _err] evaluated-ast]
                    (types/mal-datum :exception e))))
 
+             ;; cons
+             (types/mal-datum :symbol 'cons)
+             (let [[x lst] (map #(EVAL % env) args)]
+               ;; TODO: ensure lst is a :list
+               (types/mal-datum :list
+                                (into [x] (:datum-val lst))))
+
+             ;; concat
+             #_#_
+             (types/mal-datum :symbol 'concat)
+             (let [lists (map #(:datum-val (EVAL % env)) args)]
+               ;; TODO: ensure lst is a :list
+               (types/mal-datum :list
+                                (vec (apply concat lists))))
+
+             ;; deref
+             #_#_
+             (types/mal-datum :symbol 'deref)
+             (let [[a & _err] args
+                   a (EVAL a env)
+                   atom-id (:datum-val a)]
+               (-> mal-atoms deref (get atom-id)))
+
+             ;; reset
+             #_#_
+             (types/mal-datum :symbol 'reset!)
+             (let [[a v & _err] args
+                   a (EVAL a env)
+                   v (EVAL v env)
+                   atom-id (:datum-val a)]
+               (swap! mal-atoms assoc atom-id v)
+               v)
+
              ;; env-keys
              (types/mal-datum :symbol 'env-keys)
              (prn (->> env :data deref keys (map :datum-val)))
+
+             ;; (def! a (throw "b"))
+             ;; (erujolc-env-spy a)
+             ;;   ^--- the exceptions atom is leaked!
+             (types/mal-datum :symbol 'erujolc-env-spy)
+             (prn (-> env :data deref (get (first args))))
 
              ;; def!
              (types/->MalDatum :symbol 'def!)
@@ -212,16 +259,30 @@
                (when-not (-> bindings :typ (#{:vector :list}))
                  (throw (ex-info "bindings form must be a list or a vector"
                                  {:cause :bindgings-form-non-vector
+                                  :erujolc? true
                                   :bindings bindings})))
                (when (-> bindings :datum-val count odd?)
                  (throw (ex-info "bindings vector must have an even number of forms"
                                  {:cause :bindings-vector-odd-number-of-forms
+                                  :erujolc? true
                                   :bindings bindings})))
                (let [[env2 & _] (reduce (fn [[r & _] [k v]]
                                           (env/set r k (EVAL v r)))
                                         [(env/mal-environer env nil nil)]
                                         (->> bindings :datum-val (partition 2)))]
                  (recur form env2 true)))
+
+             ;; read-string
+             #_#_
+             (types/->MalDatum :symbol 'read-string)
+             (core/mal-read-string (EVAL (first args) env))
+
+             ;; slurp
+             #_#_
+             (types/->MalDatum :symbol 'slurp)
+             ;; TODO: handle error from multiple args
+             ;; TODO: handle arity for all the special forms!
+             (core/mal-slurp (EVAL (first args) env))
 
              ;; type
              (types/->MalDatum :symbol 'type)
@@ -235,6 +296,18 @@
              (types/mal-datum :symbol 'quasiquoteexpand)
              (quasiquote (first args))
 
+             #_#_
+             (types/mal-datum :symbol 'vec)
+             (let [[arg & _too-many-args?] args
+                   arg (EVAL arg env)
+                   {:keys [typ datum-val]} arg]
+               (if-not (#{:list :vector} typ)
+                 (throw (ex-info "argument to vec must be a list or a vector"
+                                 {:cause :vec-argument-must-be-list-or-vector
+                                  :erujolc? true
+                                  :arg arg}))
+                 (types/mal-datum :vector datum-val)))
+
              (types/mal-datum :symbol 'quasiquote)
              (recur (quasiquote (first args)) env true)
 
@@ -243,16 +316,14 @@
              (do (prn (eval-ast (types/mal-datum :list args) env))
                  (types/mal-datum :nil nil))
 
+             (types/mal-datum :symbol 'erujolc-inspect)
+             (do (prn args)
+                 (types/mal-datum :nil nil))
+
              ;; assume it's a function of some kind
              (let [ast-evaluated (eval-ast x env)]
-               #_
-               (prn :moquist-assume-fn exceptions/mal-exception-state)
                (when-not (exceptions/mal-exception-thrown?)
-                 #_
-                 (prn :moquist-assume-fn2)
                  (let [[f & args] (:datum-val ast-evaluated)]
-                   #_
-                   (prn :moquist-assume-fn3 (:ast (:datum-val f)))
                    ;; don't print env here, dork. it's got recursive structure in it.
                    (condp = (:typ f)
                      :host-fn (apply (:datum-val f) args)
@@ -262,6 +333,7 @@
                             (recur ast e2 true))
                      (throw (ex-info (format "Unknown type of function: %s" (:typ f))
                                      {:cause :unknown-type-of-function
+                                      :erujolc? true
                                       :f f
                                       :args args})))))))))))))
 
@@ -287,12 +359,24 @@
 ;; REPL
 
 (defn READ [x]
-  (cond
-    (string? x) (reader/mal-read-string x)
-    (satisfies? reader/MalRead x) (reader/read-form x)
-    :else (throw (Exception. (format "READ with invalid input of type %s" (type x))))))
+  (try
+    (cond
+      (string? x) (reader/mal-read-string x)
+      (satisfies? reader/MalRead x) (reader/read-form x)
+      :else (throw (Exception. (format "READ with invalid input of type %s" (type x)))))
+    (catch clojure.lang.ExceptionInfo e
+      (if (-> e ex-data :erujolc?)
+        (binding [*out* *err*]
+          (prn e)
+          [nil nil])
+        (throw e)))
+    (catch Throwable t
+      (prn :moquist-READ-throw t)
+      [nil nil])))
 
 (defn PRINT [form]
+  (if (keyword? form)
+    (prn :moquist-PRINT form))
   (cond
     (exceptions/mal-exception-thrown?)
     (let [x (exceptions/mal-exception-get 1)]
@@ -351,6 +435,7 @@
                              (EVAL ast e2 true))
                       (throw (ex-info (format "Unknown type of function mapped: %s" (:typ f))
                                       {:cause :unknown-type-of-function-mapped
+                                       :erujolc? true
                                        :f f
                                        :item item}))))
                   (:datum-val coll))]
@@ -370,6 +455,7 @@
         (prn :moquist-f f)
         (throw (ex-info (format "Unknown type of function applied: %s" (:typ f))
                         {:cause :unknown-type-of-function
+                         :erujolc? true
                          :f f
                          :args args}))))))
 
@@ -415,6 +501,7 @@
     (if-not (#{:list :vector} typ)
       (throw (ex-info "argument to vec must be a list or a vector"
                       {:cause :vec-argument-must-be-list-or-vector
+                       :erujolc? true
                        :data data}))
       (types/mal-datum :vector datum-val))))
 
@@ -430,6 +517,7 @@
                          (EVAL ast e2 true))
                   (throw (ex-info (format "Unknown type of function used in swap!: %s" (:typ f))
                                   {:cause :unknown-type-of-function
+                                   :erujolc? true
                                    :f f
                                    :args args})))]
     (swap! mal-atoms assoc atom-id new-val)

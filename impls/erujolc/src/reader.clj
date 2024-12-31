@@ -88,7 +88,10 @@
      (utils/debug :read-coll :next-tok next-tok)
      (when (= next-tok ::peeked-into-the-abyss)
        (println (str "unbalanced " paren-plural))
-       (throw (ex-info "unbalanced form" {:cause :unclosed-form :reader reader})))
+       (throw (ex-info "unbalanced form"
+                       {:cause :unclosed-form
+                        :erujolc? true
+                        :reader reader})))
      (if (= closer next-tok)
        ;; step over closing token
        (let [stepped-reader (mal-step reader)]
@@ -141,6 +144,7 @@
                    (if (str/includes? e-str "EOF while reading string")
                      (throw (ex-info e-str
                                      {:cause :eof-while-reading-string
+                                      :erujolc? true
                                       :reader reader}))
                      (throw e)))))]
     (utils/debug ::tok-str :x x)
