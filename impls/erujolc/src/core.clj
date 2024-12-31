@@ -54,6 +54,7 @@
   (when-not (= (:typ s) :string)
     (throw (ex-info (format "cannot read-string a non-string value: %s" (:typ s))
                     {:cause :read-string-non-string
+                     :erujolc? true
                      :value s})))
   ;; toss the reader
   (second (reader/mal-read-string (:datum-val s))))
@@ -62,6 +63,7 @@
   (when-not (= (:typ path) :string)
     (throw (ex-info (format "cannot slurp a non-string value: %s" (:typ path))
                     {:cause :slurp-non-string
+                     :erujolc? true
                      :value path})))
   (-> path
       :datum-val

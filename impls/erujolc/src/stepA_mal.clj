@@ -151,6 +151,7 @@
                        (exceptions/mal-exception-reset!)
                        (throw (ex-info (format "uncaught exception: %s" (printer/mal-print-string mal-e false))
                                        {:cause :uncaught-exception
+                                        :erujolc? true
                                         :exception mal-e})))))))
 
              ;; exception
@@ -258,10 +259,12 @@
                (when-not (-> bindings :typ (#{:vector :list}))
                  (throw (ex-info "bindings form must be a list or a vector"
                                  {:cause :bindgings-form-non-vector
+                                  :erujolc? true
                                   :bindings bindings})))
                (when (-> bindings :datum-val count odd?)
                  (throw (ex-info "bindings vector must have an even number of forms"
                                  {:cause :bindings-vector-odd-number-of-forms
+                                  :erujolc? true
                                   :bindings bindings})))
                (let [[env2 & _] (reduce (fn [[r & _] [k v]]
                                           (env/set r k (EVAL v r)))
@@ -301,6 +304,7 @@
                (if-not (#{:list :vector} typ)
                  (throw (ex-info "argument to vec must be a list or a vector"
                                  {:cause :vec-argument-must-be-list-or-vector
+                                  :erujolc? true
                                   :arg arg}))
                  (types/mal-datum :vector datum-val)))
 
@@ -329,6 +333,7 @@
                             (recur ast e2 true))
                      (throw (ex-info (format "Unknown type of function: %s" (:typ f))
                                      {:cause :unknown-type-of-function
+                                      :erujolc? true
                                       :f f
                                       :args args})))))))))))))
 
@@ -354,12 +359,24 @@
 ;; REPL
 
 (defn READ [x]
-  (cond
-    (string? x) (reader/mal-read-string x)
-    (satisfies? reader/MalRead x) (reader/read-form x)
-    :else (throw (Exception. (format "READ with invalid input of type %s" (type x))))))
+  (try
+    (cond
+      (string? x) (reader/mal-read-string x)
+      (satisfies? reader/MalRead x) (reader/read-form x)
+      :else (throw (Exception. (format "READ with invalid input of type %s" (type x)))))
+    (catch clojure.lang.ExceptionInfo e
+      (if (-> e ex-data :erujolc?)
+        (binding [*out* *err*]
+          (prn e)
+          [nil nil])
+        (throw e)))
+    (catch Throwable t
+      (prn :moquist-READ-throw t)
+      [nil nil])))
 
 (defn PRINT [form]
+  (if (keyword? form)
+    (prn :moquist-PRINT form))
   (cond
     (exceptions/mal-exception-thrown?)
     (let [x (exceptions/mal-exception-get 1)]
@@ -418,6 +435,7 @@
                              (EVAL ast e2 true))
                       (throw (ex-info (format "Unknown type of function mapped: %s" (:typ f))
                                       {:cause :unknown-type-of-function-mapped
+                                       :erujolc? true
                                        :f f
                                        :item item}))))
                   (:datum-val coll))]
@@ -437,6 +455,7 @@
         (prn :moquist-f f)
         (throw (ex-info (format "Unknown type of function applied: %s" (:typ f))
                         {:cause :unknown-type-of-function
+                         :erujolc? true
                          :f f
                          :args args}))))))
 
@@ -482,6 +501,7 @@
     (if-not (#{:list :vector} typ)
       (throw (ex-info "argument to vec must be a list or a vector"
                       {:cause :vec-argument-must-be-list-or-vector
+                       :erujolc? true
                        :data data}))
       (types/mal-datum :vector datum-val))))
 
@@ -497,6 +517,7 @@
                          (EVAL ast e2 true))
                   (throw (ex-info (format "Unknown type of function used in swap!: %s" (:typ f))
                                   {:cause :unknown-type-of-function
+                                   :erujolc? true
                                    :f f
                                    :args args})))]
     (swap! mal-atoms assoc atom-id new-val)

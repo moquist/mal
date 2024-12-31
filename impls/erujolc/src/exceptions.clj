@@ -19,7 +19,8 @@
       deref
       :exceptions
       last
-      (or (throw (ex-info "Attempting to get mal exception when there is none thrown" {})))))
+      (or (throw (ex-info "Attempting to get mal exception when there is none thrown"
+                          {:erujolc? true})))))
 
 (defn mal-exception-reset! []
   (reset! mal-exception-state mal-exception-state-default))
@@ -28,6 +29,7 @@
   (when-not (:typ msg)
     (throw (ex-info (format "Attempted to throw non-mal-type as exception: %s" msg)
                     {:cause :exception-thrown-without-mal-type
+                     :erujolc? true
                      :msg msg})))
   (swap! mal-exception-state
          (fn [a]
