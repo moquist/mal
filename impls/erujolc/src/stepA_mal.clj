@@ -120,24 +120,31 @@
          :else
          (let [[f & args] (:datum-val x)]
            (condp = f
+             ;; atom
+             #_#_
+             (types/->MalDatum :symbol 'atom)
+             (let [[v & _err] args
+                   atom-id (gensym)]
+               (swap! mal-atoms assoc atom-id (EVAL v env))
+               (-> (types/mal-datum :atom atom-id)
+                   (assoc :meta-datum {:mal-atoms mal-atoms})))
+
              ;; throw-mal-exception!
              ;; ALT: expose the exception state to the Mal programmer.
              (types/mal-datum :symbol 'throw-mal-exception!)
              (let [[e & _err] args]
-               (prn :moquist-erujolc-exception e)
                (exceptions/throw-mal-exception! (eval-ast e env)))
 
              ;; try*/catch*
              (types/mal-datum :symbol 'try*)
              (let [[form & [catch-block]] args
                    tried (EVAL form env)]
-               (prn :moquist-erujolc-exception2 :tried tried :thrown? (exceptions/mal-exception-thrown?))
                (if-not (exceptions/mal-exception-thrown?)
                  tried
-                 (let [mal-e (exceptions/mal-exception-get 2)]
+                 (let [mal-e (exceptions/mal-exception-get)]
                    (if-let [catch-block (:datum-val catch-block)]
                      (let [[_catch* exception-symbol exception-form] catch-block
-                           e2 (env/mal-environer env [exception-symbol] [(exceptions/mal-exception-get 3)])]
+                           e2 (env/mal-environer env [exception-symbol] [(exceptions/mal-exception-get)])]
                        (exceptions/mal-exception-reset!)
                        (recur exception-form e2 true))
                      (do
