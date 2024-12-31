@@ -320,6 +320,10 @@
              (do (prn args)
                  (types/mal-datum :nil nil))
 
+             (types/mal-datum :symbol 'erujolc-type)
+             (do (prn (mapv type args))
+                 (types/mal-datum :nil nil))
+
              ;; assume it's a function of some kind
              (let [ast-evaluated (eval-ast x env)]
                (when-not (exceptions/mal-exception-thrown?)
