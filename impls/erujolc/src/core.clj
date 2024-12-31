@@ -57,7 +57,11 @@
                      :erujolc? true
                      :value s})))
   ;; toss the reader
-  (second (reader/mal-read-string (:datum-val s))))
+  (let [v (second (reader/mal-read-string (:datum-val s)))]
+    ;; ew
+    (if (= :reader/peeked-into-the-abyss v)
+      (types/mal-datum :nil nil)
+      v)))
 
 (defn mal-slurp [path]
   (when-not (= (:typ path) :string)
