@@ -160,9 +160,48 @@
                  (let [[e & _err] evaluated-ast]
                    (types/mal-datum :exception e))))
 
+             ;; cons
+             (types/mal-datum :symbol 'cons)
+             (let [[x lst] (map #(EVAL % env) args)]
+               ;; TODO: ensure lst is a :list
+               (types/mal-datum :list
+                                (into [x] (:datum-val lst))))
+
+             ;; concat
+             #_#_
+             (types/mal-datum :symbol 'concat)
+             (let [lists (map #(:datum-val (EVAL % env)) args)]
+               ;; TODO: ensure lst is a :list
+               (types/mal-datum :list
+                                (vec (apply concat lists))))
+
+             ;; deref
+             #_#_
+             (types/mal-datum :symbol 'deref)
+             (let [[a & _err] args
+                   a (EVAL a env)
+                   atom-id (:datum-val a)]
+               (-> mal-atoms deref (get atom-id)))
+
+             ;; reset
+             #_#_
+             (types/mal-datum :symbol 'reset!)
+             (let [[a v & _err] args
+                   a (EVAL a env)
+                   v (EVAL v env)
+                   atom-id (:datum-val a)]
+               (swap! mal-atoms assoc atom-id v)
+               v)
+
              ;; env-keys
              (types/mal-datum :symbol 'env-keys)
              (prn (->> env :data deref keys (map :datum-val)))
+
+             ;; (def! a (throw "b"))
+             ;; (erujolc-env-spy a)
+             ;;   ^--- the exceptions atom is leaked!
+             (types/mal-datum :symbol 'erujolc-env-spy)
+             (prn (-> env :data deref (get (first args))))
 
              ;; def!
              (types/->MalDatum :symbol 'def!)
@@ -230,6 +269,18 @@
                                         (->> bindings :datum-val (partition 2)))]
                  (recur form env2 true)))
 
+             ;; read-string
+             #_#_
+             (types/->MalDatum :symbol 'read-string)
+             (core/mal-read-string (EVAL (first args) env))
+
+             ;; slurp
+             #_#_
+             (types/->MalDatum :symbol 'slurp)
+             ;; TODO: handle error from multiple args
+             ;; TODO: handle arity for all the special forms!
+             (core/mal-slurp (EVAL (first args) env))
+
              ;; type
              (types/->MalDatum :symbol 'type)
              (let [[x & _error-handling-someday] args]
@@ -242,6 +293,17 @@
              (types/mal-datum :symbol 'quasiquoteexpand)
              (quasiquote (first args))
 
+             #_#_
+             (types/mal-datum :symbol 'vec)
+             (let [[arg & _too-many-args?] args
+                   arg (EVAL arg env)
+                   {:keys [typ datum-val]} arg]
+               (if-not (#{:list :vector} typ)
+                 (throw (ex-info "argument to vec must be a list or a vector"
+                                 {:cause :vec-argument-must-be-list-or-vector
+                                  :arg arg}))
+                 (types/mal-datum :vector datum-val)))
+
              (types/mal-datum :symbol 'quasiquote)
              (recur (quasiquote (first args)) env true)
 
@@ -250,16 +312,14 @@
              (do (prn (eval-ast (types/mal-datum :list args) env))
                  (types/mal-datum :nil nil))
 
+             (types/mal-datum :symbol 'erujolc-inspect)
+             (do (prn args)
+                 (types/mal-datum :nil nil))
+
              ;; assume it's a function of some kind
              (let [ast-evaluated (eval-ast x env)]
-               #_
-               (prn :moquist-assume-fn exceptions/mal-exception-state)
                (when-not (exceptions/mal-exception-thrown?)
-                 #_
-                 (prn :moquist-assume-fn2)
                  (let [[f & args] (:datum-val ast-evaluated)]
-                   #_
-                   (prn :moquist-assume-fn3 (:ast (:datum-val f)))
                    ;; don't print env here, dork. it's got recursive structure in it.
                    (condp = (:typ f)
                      :host-fn (apply (:datum-val f) args)
