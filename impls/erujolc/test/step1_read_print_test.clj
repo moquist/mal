@@ -18,6 +18,6 @@
                         :list [(types/->MalDatum :keyword :a)])) "(:a)"))
   (is (= (step1/PRINT (types/->MalDatum
                         :vector [(types/->MalDatum :keyword :a)])) "[:a]"))
-  (is (nil? (step1/PRINT false)))
-  (is (nil? (step1/PRINT nil)))
+  (is (= "false" (step1/PRINT (types/mal-datum :boolean false))))
+  (is (= "nil" (step1/PRINT (types/mal-datum :nil nil))))
   )

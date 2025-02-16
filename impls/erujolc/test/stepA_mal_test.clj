@@ -24,7 +24,8 @@
                    )]
     (is (= {:cause :uncaught-exception,
             :exception (types/mal-datum :exception
-                                        (types/mal-datum :string "'boof' not found"))}
+                                        (types/mal-datum :string "'boof' not found"))
+            :erujolc? true}
            result))))
 
 (deftest throw-test
