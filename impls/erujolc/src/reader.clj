@@ -88,6 +88,8 @@
      (utils/debug :read-coll :next-tok next-tok)
      (when (= next-tok ::peeked-into-the-abyss)
        (println (str "unbalanced " paren-plural))
+       #_
+       (exceptions/throw-mal-exception! (types/mal-datum :string (format "unbalanced %s" paren-plural)))
        (throw (ex-info "unbalanced form"
                        {:cause :unclosed-form
                         :erujolc? true
