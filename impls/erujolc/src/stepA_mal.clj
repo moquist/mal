@@ -360,18 +360,20 @@
 
 (defn READ [x]
   (try
+    (prn :moquist-READ x)
     (cond
       (string? x) (reader/mal-read-string x)
       (satisfies? reader/MalRead x) (reader/read-form x)
       :else (throw (Exception. (format "READ with invalid input of type %s" (type x)))))
     (catch clojure.lang.ExceptionInfo e
+      (prn :moquist-READ-throw-e e)
       (if (-> e ex-data :erujolc?)
         (binding [*out* *err*]
           (prn e)
           [nil nil])
         (throw e)))
     (catch Throwable t
-      (prn :moquist-READ-throw t)
+      (prn :moquist-READ-throw-t t)
       [nil nil])))
 
 (defn PRINT [form]
@@ -381,7 +383,6 @@
     (exceptions/mal-exception-thrown?)
     (let [x (exceptions/mal-exception-get 1)]
       (exceptions/mal-exception-reset!)
-      #_
       (prn :moquist-exception x)
       (binding [*out* *err*]
         (println (str "erujolc Exception: " (printer/mal-print-string x true)))))
@@ -393,19 +394,30 @@
   (try
     (let [[reader form] (READ x)]
       [reader (-> form (EVAL env) PRINT)])
+    (catch clojure.lang.ExceptionInfo e
+      (if (-> e ex-data :erujolc?)
+        (binding [*out* *err*]
+          (prn e)
+          [nil ""])
+        (throw e)))
     (catch Throwable t
+      (prn :monkey-pants)
       [nil ""])))
 
 (defn LOOP
   "Loop through the forms in the provided input"
   [input env]
   (try
+    (prn :moquist-LOOP-start)
     (loop [[reader result] (rep input env)]
       ;; TODO: stop printing here, that's dumb
-      (when result (println result) (flush))
+      (when result (println result) (flush)
+        (prn :moquist-result))
       (when (and reader (not= :reader/peeked-into-the-abyss (reader/mal-peek reader)))
+        (prn :moquist-recurring)
         (recur (rep reader env))))
     (catch Throwable e
+      (prn :moquist-LOOP-bop)
       (binding [*out* *err*]
         (prn e)))))
 
@@ -493,7 +505,14 @@
                                 (vec (apply concat lists)))))
 
 (defn mal-read-string [env s]
-  (core/mal-read-string (EVAL s env)))
+  (try
+    (core/mal-read-string (EVAL s env))
+    (catch clojure.lang.ExceptionInfo e
+      (if (-> e ex-data :erujolc?)
+        (binding [*out* *err*]
+          (prn e)
+          (types/mal-datum :nil nil))
+        (throw e)))))
 
 (defn mal-slurp [env path]
   (core/mal-slurp (EVAL path env)))

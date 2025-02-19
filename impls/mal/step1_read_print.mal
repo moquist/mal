@@ -11,7 +11,11 @@
 
 ;; repl
 (def! rep (fn* [strng]
-  (PRINT (EVAL (READ strng)))))
+           (do
+           (println :moquist-mal-rep strng)
+           (println :moquist-mal-READ (READ strng))
+           (println :moquist-mal-EVAL (EVAL (READ strng)))
+  (PRINT (EVAL (READ strng))))))
 
 ;; repl loop
 (def! repl-loop (fn* [line]
