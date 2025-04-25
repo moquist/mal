@@ -61,13 +61,12 @@
     (let [{data :data} (-find this k)]
       (when (and data (contains? @data k))
         (@data k))))
-  #_#_
   Object
   (toString [this]
     (format "#<MalEnvironer>%s" @(:data this))))
 
-(defmethod clojure.core/print-method MalEnvironer [env, writer]
-  (prn (format "#<MalEnvironer>%s" (-> env :data deref keys))))
+(defmethod clojure.core/print-method MalEnvironer [env, ^java.io.Writer w]
+  (.write w (format "#<MalEnvironer>%s" (-> env :data deref keys))))
 
 (defn handle-variadic [binds exprs]
   (loop [binds binds
@@ -78,6 +77,8 @@
             (= (types/->MalDatum :symbol '&)))
       (assoc result
              (second binds)
+             ;; can switch to :vector here and avoid later eval attempt
+             ;; I turn this into a :list boxtype, where mal leaves it as a native list
              (types/->MalDatum :list exprs))
       (let [result (assoc result
                           (first binds)
