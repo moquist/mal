@@ -61,8 +61,10 @@
 (def mal-true (->MalDatum :bool true))
 (def mal-false (->MalDatum :bool false))
 
-(defmethod clojure.core/print-method ::fn* [x _]
-  (prn (select-keys x [:ast :binds])))
+(defmethod clojure.core/print-method ::fn* [x ^java.io.Writer w]
+  (.write w "a fn")
+  #_
+  (.write w (str (select-keys x [:ast :binds]))))
 
 
 (extend-protocol printer/MalPrinter

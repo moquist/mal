@@ -112,7 +112,10 @@
                (mal-macroexpand x env))]
        (cond
          (-> x :typ (not= :list))
-         (eval-ast x env)
+         (do
+           #_
+           (prn :moquist-wat :x-typ (:typ x))
+           (eval-ast x env)) ; here2
 
          (-> x :datum-val empty?)
          (types/->MalDatum :list [])
@@ -350,7 +353,7 @@
               :datum-val
               (map (fn [[k v]]
                      [(EVAL k env)
-                      (EVAL v env)]))
+                      (EVAL v env)])) ; here1
               (into {})
               (types/->MalDatum :map))
     ast))
@@ -360,12 +363,14 @@
 
 (defn READ [x]
   (try
+    #_
     (prn :moquist-READ x)
     (cond
       (string? x) (reader/mal-read-string x)
       (satisfies? reader/MalRead x) (reader/read-form x)
       :else (throw (Exception. (format "READ with invalid input of type %s" (type x)))))
     (catch clojure.lang.ExceptionInfo e
+      #_
       (prn :moquist-READ-throw-e e)
       (if (-> e ex-data :erujolc?)
         (binding [*out* *err*]
@@ -373,10 +378,12 @@
           [nil nil])
         (throw e)))
     (catch Throwable t
+      #_
       (prn :moquist-READ-throw-t t)
       [nil nil])))
 
 (defn PRINT [form]
+  #_
   (if (keyword? form)
     (prn :moquist-PRINT form))
   (cond
@@ -401,7 +408,7 @@
           [nil ""])
         (throw e)))
     (catch Throwable t
-      (prn :monkey-pants)
+      (prn :monkey-pants t)
       [nil ""])))
 
 (defn LOOP
@@ -476,7 +483,10 @@
 
 (defn mal-atom [env v]
   (let [atom-id (gensym)]
-    (swap! mal-atoms assoc atom-id (EVAL v env))
+    ;; here3
+    #_
+    (prn :moquist-mal-atom :evaling v)
+    (swap! mal-atoms assoc atom-id v #_(EVAL v env))
     (-> (types/mal-datum :atom atom-id)
         (assoc :meta-datum {:mal-atoms mal-atoms}))))
 
@@ -486,8 +496,8 @@
     (-> mal-atoms deref (get atom-id))))
 
 (defn mal-reset [env a v]
-  (let [a (EVAL a env)
-        v (EVAL v env)
+  (let [#_#_a (EVAL a env)
+        #_#_v (EVAL v env)
         atom-id (:datum-val a)]
     (swap! mal-atoms assoc atom-id v)
     v))
