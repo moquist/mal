@@ -528,7 +528,7 @@
   (core/mal-slurp (EVAL path env)))
 
 (defn mal-vec [env data]
-  (let [data (eval-ast data env)
+  (let [#_#_data (eval-ast data env)
         {:keys [typ datum-val]} data]
     (if-not (#{:list :vector} typ)
       (throw (ex-info "argument to vec must be a list or a vector"
