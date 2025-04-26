@@ -415,15 +415,19 @@
   "Loop through the forms in the provided input"
   [input env]
   (try
+    #_
     (prn :moquist-LOOP-start)
     (loop [[reader result] (rep input env)]
       ;; TODO: stop printing here, that's dumb
       (when result (println result) (flush)
+        #_
         (prn :moquist-result))
       (when (and reader (not= :reader/peeked-into-the-abyss (reader/mal-peek reader)))
+        #_
         (prn :moquist-recurring)
         (recur (rep reader env))))
     (catch Throwable e
+      #_
       (prn :moquist-LOOP-bop)
       (binding [*out* *err*]
         (prn e)))))
