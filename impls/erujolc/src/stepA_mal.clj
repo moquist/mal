@@ -507,13 +507,14 @@
     v))
 
 (defn mal-cons [env & args]
-  (let [[x lst] (map #(EVAL % env) args)]
+  (let [[x lst] args #_(map #(EVAL % env) args)]
     ;; TODO: ensure lst is a :list
     (types/mal-datum :list
                      (into [x] (:datum-val lst)))))
 
 (defn mal-concat [env & args]
-  (let [lists (map #(:datum-val (EVAL % env)) args)]
+  (let [lists (map :datum-val
+                   #_#(:datum-val (EVAL % env)) args)]
                ;; TODO: ensure lst is a :list
                (types/mal-datum :list
                                 (vec (apply concat lists)))))
