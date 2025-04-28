@@ -7,6 +7,34 @@ There was already a Clojure implementation of Mal, so for lack of a clever alter
 3. The freshly completed erujolc Mal is needlessly cumbersome.
 4. The freshly completed erujolc Mal is outdated since I most recently rebased to upstream in 2022.
 
+## Tests
+
+Use the self-hosted run script:
+
+```
+$ ls -l impls/erujolc/run
+lrwxrwxrwx. 1 moquist moquist 15 Apr 28 17:41 impls/erujolc/run -> run-self-hosted
+```
+
+Run all the tests:
+
+```
+$ for x in 0 1 2 3 4 6 7 8 9 A; do echo step$x: $(make test^erujolc^step$x |& grep 'failing tests'); done
+step0: 0: soft failing tests 0: failing tests
+step1: 0: soft failing tests 0: failing tests
+step2: 0: soft failing tests 0: failing tests
+step3: 0: soft failing tests 0: failing tests
+step4: 0: soft failing tests 0: failing tests
+
+
+step6: 0: soft failing tests 0: failing tests
+step7: 0: soft failing tests 0: failing tests
+step8: 0: soft failing tests 0: failing tests
+step9: 0: soft failing tests 0: failing tests
+stepA: 77: soft failing tests 0: failing tests
+```
+
+
 ## Notes for self
 Bugs found while fixing self-hosting
 
