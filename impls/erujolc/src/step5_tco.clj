@@ -132,8 +132,6 @@
     :else (throw (Exception. (format "READ with invalid input of type %s" (type x))))))
 
 (defn PRINT [form]
-  #_
-  (clojure.pprint/pprint {:moquist :PRINT :form form})
   (when (satisfies? printer/MalPrinter form)
     (printer/mal-print-string form true)))
 

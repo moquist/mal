@@ -50,8 +50,6 @@
   )
 
 (defn quasiquote [ast]
-  #_
-  (prn :moquist-ast ast)
   (->> (let [{:keys [typ datum-val]} ast]
          (cond
            (and (= :list typ)
@@ -66,10 +64,7 @@
                             [(types/mal-datum :symbol 'quote)
                              ast])
 
-           :else ast))
-       #_
-       (#(do (prn :moquist-% %) %)))
-  )
+           :else ast))))
 
 ;; ========================================
 ;; EVAL
@@ -289,8 +284,6 @@
     :else (throw (Exception. (format "READ with invalid input of type %s" (type x))))))
 
 (defn PRINT [form]
-  #_
-  (clojure.pprint/pprint {:moquist :PRINT :form form})
   (when (satisfies? printer/MalPrinter form)
     (printer/mal-print-string form true)))
 

@@ -37,7 +37,7 @@
       :fn* "#<function>"
       :list (str "(" (printer/-mal-print-list this print-readably) ")")
       :map (str "{" (printer/-mal-print-map this print-readably) "}")
-      :string (do #_(prn :moquist-string print-readably datum-val) ((if print-readably pr-str print-str) datum-val))
+      :string ((if print-readably pr-str print-str) datum-val)
       :vector (str "[" (printer/-mal-print-list this print-readably) "]")
       :nil "nil"
       (str datum-val)))

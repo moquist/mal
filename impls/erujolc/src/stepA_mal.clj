@@ -112,10 +112,7 @@
                (mal-macroexpand x env))]
        (cond
          (-> x :typ (not= :list))
-         (do
-           #_
-           (prn :moquist-wat :x-typ (:typ x))
-           (eval-ast x env)) ; here2
+         (eval-ast x env)
 
          (-> x :datum-val empty?)
          (types/->MalDatum :list [])
@@ -123,15 +120,6 @@
          :else
          (let [[f & args] (:datum-val x)]
            (condp = f
-             ;; atom
-             #_#_
-             (types/->MalDatum :symbol 'atom)
-             (let [[v & _err] args
-                   atom-id (gensym)]
-               (swap! mal-atoms assoc atom-id (EVAL v env))
-               (-> (types/mal-datum :atom atom-id)
-                   (assoc :meta-datum {:mal-atoms mal-atoms})))
-
              ;; throw-mal-exception!
              ;; ALT: expose the exception state to the Mal programmer.
              (types/mal-datum :symbol 'throw-mal-exception!)
@@ -170,32 +158,6 @@
                ;; TODO: ensure lst is a :list
                (types/mal-datum :list
                                 (into [x] (:datum-val lst))))
-
-             ;; concat
-             #_#_
-             (types/mal-datum :symbol 'concat)
-             (let [lists (map #(:datum-val (EVAL % env)) args)]
-               ;; TODO: ensure lst is a :list
-               (types/mal-datum :list
-                                (vec (apply concat lists))))
-
-             ;; deref
-             #_#_
-             (types/mal-datum :symbol 'deref)
-             (let [[a & _err] args
-                   a (EVAL a env)
-                   atom-id (:datum-val a)]
-               (-> mal-atoms deref (get atom-id)))
-
-             ;; reset
-             #_#_
-             (types/mal-datum :symbol 'reset!)
-             (let [[a v & _err] args
-                   a (EVAL a env)
-                   v (EVAL v env)
-                   atom-id (:datum-val a)]
-               (swap! mal-atoms assoc atom-id v)
-               v)
 
              ;; env-keys
              (types/mal-datum :symbol 'env-keys)
@@ -275,18 +237,6 @@
                                         (->> bindings :datum-val (partition 2)))]
                  (recur form env2 true)))
 
-             ;; read-string
-             #_#_
-             (types/->MalDatum :symbol 'read-string)
-             (core/mal-read-string (EVAL (first args) env))
-
-             ;; slurp
-             #_#_
-             (types/->MalDatum :symbol 'slurp)
-             ;; TODO: handle error from multiple args
-             ;; TODO: handle arity for all the special forms!
-             (core/mal-slurp (EVAL (first args) env))
-
              ;; type
              (types/->MalDatum :symbol 'type)
              (let [[x & _error-handling-someday] args]
@@ -298,18 +248,6 @@
 
              (types/mal-datum :symbol 'quasiquoteexpand)
              (quasiquote (first args))
-
-             #_#_
-             (types/mal-datum :symbol 'vec)
-             (let [[arg & _too-many-args?] args
-                   arg (EVAL arg env)
-                   {:keys [typ datum-val]} arg]
-               (if-not (#{:list :vector} typ)
-                 (throw (ex-info "argument to vec must be a list or a vector"
-                                 {:cause :vec-argument-must-be-list-or-vector
-                                  :erujolc? true
-                                  :arg arg}))
-                 (types/mal-datum :vector datum-val)))
 
              (types/mal-datum :symbol 'quasiquote)
              (recur (quasiquote (first args)) env true)
@@ -363,29 +301,20 @@
 
 (defn READ [x]
   (try
-    #_
-    (prn :moquist-READ x)
     (cond
       (string? x) (reader/mal-read-string x)
       (satisfies? reader/MalRead x) (reader/read-form x)
       :else (throw (Exception. (format "READ with invalid input of type %s" (type x)))))
     (catch clojure.lang.ExceptionInfo e
-      #_
-      (prn :moquist-READ-throw-e e)
       (if (-> e ex-data :erujolc?)
         (binding [*out* *err*]
           (prn e)
           [nil nil])
         (throw e)))
-    (catch Throwable t
-      #_
-      (prn :moquist-READ-throw-t t)
+    (catch Throwable _t
       [nil nil])))
 
 (defn PRINT [form]
-  #_
-  (if (keyword? form)
-    (prn :moquist-PRINT form))
   (cond
     (exceptions/mal-exception-thrown?)
     (let [x (exceptions/mal-exception-get 1)]
@@ -415,20 +344,12 @@
   "Loop through the forms in the provided input"
   [input env]
   (try
-    #_
-    (prn :moquist-LOOP-start)
     (loop [[reader result] (rep input env)]
       ;; TODO: stop printing here, that's dumb
-      (when result (println result) (flush)
-        #_
-        (prn :moquist-result))
+      (when result (println result) (flush))
       (when (and reader (not= :reader/peeked-into-the-abyss (reader/mal-peek reader)))
-        #_
-        (prn :moquist-recurring)
         (recur (rep reader env))))
     (catch Throwable e
-      #_
-      (prn :moquist-LOOP-bop)
       (binding [*out* *err*]
         (prn e)))))
 
@@ -476,21 +397,15 @@
       :fn* (let [{:keys [ast binds f-env]} (:datum-val f)
                  e2 (env/mal-environer f-env (:datum-val binds) args)]
              (EVAL ast e2 true))
-      (do
-        #_
-        (prn :moquist-f f)
-        (throw (ex-info (format "Unknown type of function applied: %s" (:typ f))
+      (throw (ex-info (format "Unknown type of function applied: %s" (:typ f))
                         {:cause :unknown-type-of-function
                          :erujolc? true
                          :f f
-                         :args args}))))))
+                         :args args})))))
 
 (defn mal-atom [env v]
   (let [atom-id (gensym)]
-    ;; here3
-    #_
-    (prn :moquist-mal-atom :evaling v)
-    (swap! mal-atoms assoc atom-id v #_(EVAL v env))
+    (swap! mal-atoms assoc atom-id v)
     (-> (types/mal-datum :atom atom-id)
         (assoc :meta-datum {:mal-atoms mal-atoms}))))
 
@@ -500,21 +415,18 @@
     (-> mal-atoms deref (get atom-id))))
 
 (defn mal-reset [env a v]
-  (let [#_#_a (EVAL a env)
-        #_#_v (EVAL v env)
-        atom-id (:datum-val a)]
+  (let [atom-id (:datum-val a)]
     (swap! mal-atoms assoc atom-id v)
     v))
 
 (defn mal-cons [env & args]
-  (let [[x lst] args #_(map #(EVAL % env) args)]
+  (let [[x lst] args]
     ;; TODO: ensure lst is a :list
     (types/mal-datum :list
                      (into [x] (:datum-val lst)))))
 
 (defn mal-concat [env & args]
-  (let [lists (map :datum-val
-                   #_#(:datum-val (EVAL % env)) args)]
+  (let [lists (map :datum-val args)]
                ;; TODO: ensure lst is a :list
                (types/mal-datum :list
                                 (vec (apply concat lists)))))
@@ -533,8 +445,7 @@
   (core/mal-slurp (EVAL path env)))
 
 (defn mal-vec [env data]
-  (let [#_#_data (eval-ast data env)
-        {:keys [typ datum-val]} data]
+  (let [{:keys [typ datum-val]} data]
     (if-not (#{:list :vector} typ)
       (throw (ex-info "argument to vec must be a list or a vector"
                       {:cause :vec-argument-must-be-list-or-vector
